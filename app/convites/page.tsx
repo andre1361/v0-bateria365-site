@@ -1,11 +1,27 @@
 import type { Metadata } from "next"
 import { cookies } from "next/headers"
-import { LogOut } from "lucide-react"
+import { Lato, Montserrat } from "next/font/google"
 import { CONVITES_COOKIE, getConvitesToken } from "./auth"
 import { logoutConvites } from "./actions"
 import { PasswordGate } from "./password-gate"
 import { InviteEditor } from "./invite-editor"
-import { Button } from "@/components/ui/button"
+
+// Fontes usadas pelas artes dos convites (self-hosted pelo next/font, mesma
+// origem — garante render fiel e exportação de PNG sem problemas de CORS).
+const lato = Lato({
+  subsets: ["latin"],
+  weight: ["400", "700", "900"],
+  variable: "--font-lato",
+  display: "swap",
+})
+
+const montserrat = Montserrat({
+  subsets: ["latin"],
+  weight: ["800"],
+  style: ["italic"],
+  variable: "--font-montserrat",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   title: "Editor de Convites",
@@ -17,29 +33,9 @@ export default async function ConvitesPage() {
   const cookieStore = await cookies()
   const isAuthed = cookieStore.get(CONVITES_COOKIE)?.value === getConvitesToken()
 
-  if (!isAuthed) {
-    return <PasswordGate />
-  }
-
   return (
-    <div className="min-h-screen bg-background">
-      <header className="flex items-center justify-between border-b bg-primary px-4 py-3 text-white sm:px-6">
-        <span className="font-bold">Editor de Convites</span>
-        <form action={logoutConvites}>
-          <Button
-            type="submit"
-            variant="ghost"
-            className="text-white hover:bg-white/10 hover:text-white"
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </Button>
-        </form>
-      </header>
-
-      <main>
-        <InviteEditor />
-      </main>
+    <div className={`${lato.variable} ${montserrat.variable}`}>
+      {isAuthed ? <InviteEditor logoutAction={logoutConvites} /> : <PasswordGate />}
     </div>
   )
 }
