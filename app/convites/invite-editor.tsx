@@ -31,7 +31,12 @@ type EditorState = {
 const OFFSET_KEY = "cv_sq_offsets_v1"
 const STEP = 2
 
-const DEFAULT_OFFSETS: Offsets = { badge: -8, title: 0, pill: 12, group: 16, logoX: 0, logoY: 0 }
+// Predefinição fixada do ajuste fino de posição. A UI de ajuste está oculta
+// por enquanto (SHOW_FINE_TUNE), mas a arte do convite usa sempre estes valores.
+const DEFAULT_OFFSETS: Offsets = { badge: -22, title: 10, pill: 24, group: 86, logoX: 0, logoY: 12 }
+
+// Liga/desliga a seção "Ajuste fino de posição" no editor.
+const SHOW_FINE_TUNE: boolean = false
 
 const INITIAL_STATE: EditorState = {
   template: "square",
@@ -141,7 +146,7 @@ export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormD
       document.fonts.ready.then(() => fitPreview()).catch(() => {})
     }
     try {
-      const raw = localStorage.getItem(OFFSET_KEY)
+      const raw = SHOW_FINE_TUNE ? localStorage.getItem(OFFSET_KEY) : null
       if (raw) {
         const o = JSON.parse(raw)
         const clean: Offsets = {
@@ -566,7 +571,8 @@ export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormD
                 </span>
               </div>
 
-              {/* Ajuste fino de posicao */}
+              {/* Ajuste fino de posição — oculto por enquanto (valores fixados em DEFAULT_OFFSETS) */}
+              {SHOW_FINE_TUNE && (
               <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px dashed #e2e4ea" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                   <span
@@ -777,6 +783,7 @@ export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormD
                   Zerar posições
                 </button>
               </div>
+              )}
             </div>
           )}
 
