@@ -81,9 +81,42 @@ export const raffles = pgTable("raffles", {
   criadoEm: timestamp("criado_em", { withTimezone: true }).notNull().defaultNow(),
 })
 
+// Eventos (treinamentos) com link público de convite + confirmação de presença.
+export const events = pgTable("events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  distributorId: uuid("distributor_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  titulo: text("titulo").notNull(),
+  modulo: text("modulo").notNull().default(""),
+  dataISO: text("data_iso").notNull().default(""),
+  horario: text("horario").notNull().default(""),
+  cidade: text("cidade").notNull().default(""),
+  local: text("local").notNull().default(""),
+  responsavel: text("responsavel").notNull().default(""),
+  instagram: text("instagram").notNull().default(""),
+  template: text("template").notNull().default("square"),
+  slug: text("slug").notNull().unique(),
+  ativo: boolean("ativo").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Confirmações de presença (RSVP) de um evento.
+export const rsvps = pgTable("rsvps", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  eventId: uuid("event_id")
+    .notNull()
+    .references(() => events.id, { onDelete: "cascade" }),
+  nome: text("nome").notNull(),
+  telefone: text("telefone").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
 export type User = typeof users.$inferSelect
 export type Student = typeof students.$inferSelect
 export type Certificate = typeof certificates.$inferSelect
 export type EmitLink = typeof emitLinks.$inferSelect
 export type Invite = typeof invites.$inferSelect
 export type Raffle = typeof raffles.$inferSelect
+export type Event = typeof events.$inferSelect
+export type Rsvp = typeof rsvps.$inferSelect
