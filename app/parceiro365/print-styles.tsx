@@ -7,6 +7,11 @@ export function PrintStyles() {
         @page { size: A4 landscape; margin: 0; }
         body * { visibility: hidden !important; }
         #cert-print-area, #cert-print-area * { visibility: visible !important; }
+        /* Força impressão das cores/imagens de fundo (fundo azul, faixa, barras) */
+        #cert-print-area, #cert-print-area * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
         #cert-print-area {
           position: absolute !important; left: 0 !important; top: 0 !important;
           width: 297mm !important; margin: 0 !important;

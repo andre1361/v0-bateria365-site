@@ -36,6 +36,8 @@ export function Certificate({
         position: "relative",
         overflow: "hidden",
         fontFamily: "var(--font-pt-sans), sans-serif",
+        WebkitPrintColorAdjust: "exact",
+        printColorAdjust: "exact",
         ...style,
       }}
     >
