@@ -106,7 +106,22 @@ function fmtOff(n: number): string {
   return (v > 0 ? "+" : "") + v + " px"
 }
 
-export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormData) => void | Promise<void> }) {
+export type InviteMeta = {
+  template: string
+  cidade: string
+  data: string
+  horario: string
+  distribuidor: string
+  local: string
+}
+
+export function InviteEditor({
+  headerRight,
+  onGenerated,
+}: {
+  headerRight?: React.ReactNode
+  onGenerated?: (meta: InviteMeta) => void
+}) {
   const [state, setState] = useState<EditorState>(INITIAL_STATE)
   const stageRef = useRef<HTMLDivElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -266,6 +281,14 @@ export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormD
       document.body.appendChild(a)
       a.click()
       a.remove()
+      onGenerated?.({
+        template: state.template,
+        cidade: state.cidade,
+        data: fmtDate(state.dataISO),
+        horario: state.horario,
+        distribuidor: state.distribuidor,
+        local: state.local,
+      })
     } catch (e) {
       console.error("Falha ao gerar PNG:", e)
     } finally {
@@ -276,7 +299,17 @@ export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormD
       setState((s) => ({ ...s, downloading: false }))
       fitPreview()
     }
-  }, [state.downloading, state.template, state.cidade, fitPreview])
+  }, [
+    state.downloading,
+    state.template,
+    state.cidade,
+    state.dataISO,
+    state.horario,
+    state.distribuidor,
+    state.local,
+    onGenerated,
+    fitPreview,
+  ])
 
   const isSquare = state.template === "square"
   const off = state.offsets
@@ -372,26 +405,7 @@ export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormD
                 Bateria 365 · Distribuidor
               </span>
             </div>
-            {logoutAction && (
-              <form action={logoutAction}>
-                <button
-                  type="submit"
-                  title="Encerrar sessão"
-                  style={{
-                    fontFamily: "inherit",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: "#8a90a0",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
-                  }}
-                >
-                  Sair
-                </button>
-              </form>
-            )}
+            {headerRight}
           </div>
           <h1 style={{ margin: 0, fontSize: 25, fontWeight: 900, letterSpacing: "-0.01em", color: "#081344" }}>
             Editor de Convites

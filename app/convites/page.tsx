@@ -35,7 +35,32 @@ export default async function ConvitesPage() {
 
   return (
     <div className={`${lato.variable} ${montserrat.variable}`}>
-      {isAuthed ? <InviteEditor logoutAction={logoutConvites} /> : <PasswordGate />}
+      {isAuthed ? (
+        <InviteEditor
+          headerRight={
+            <form action={logoutConvites}>
+              <button
+                type="submit"
+                title="Encerrar sessão"
+                style={{
+                  fontFamily: "inherit",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "#8a90a0",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                Sair
+              </button>
+            </form>
+          }
+        />
+      ) : (
+        <PasswordGate />
+      )}
     </div>
   )
 }

@@ -78,3 +78,10 @@
     cursor: url("/images/yellow-cursor.png") 12 12, auto; /* 12 12 são as coordenadas do hotspot (centro) do cursor */
   }
 }
+
+/* Foco padrão dos campos do portal Parceiro 365 */
+.pf365:focus {
+  outline: none;
+  border-color: #04377f !important;
+  box-shadow: 0 0 0 3px rgba(4, 55, 122, 0.1);
+}
