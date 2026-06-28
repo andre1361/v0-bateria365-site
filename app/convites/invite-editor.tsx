@@ -15,7 +15,7 @@ type Offsets = {
   logoY: number
 }
 
-type EditorState = {
+export type EditorState = {
   template: Template
   cidade: string
   dataISO: string
@@ -119,14 +119,17 @@ export function InviteEditor({
   headerRight,
   onGenerated,
   embedded,
+  initial,
 }: {
   headerRight?: React.ReactNode
   onGenerated?: (meta: InviteMeta) => void
   // embedded=true: preenche a altura do container (uso dentro do portal),
   // em vez de ocupar a tela inteira (100vh).
   embedded?: boolean
+  // Valores iniciais (ex.: auto-preenchidos a partir de um evento).
+  initial?: Partial<EditorState>
 }) {
-  const [state, setState] = useState<EditorState>(INITIAL_STATE)
+  const [state, setState] = useState<EditorState>({ ...INITIAL_STATE, ...(initial || {}) })
   const stageRef = useRef<HTMLDivElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null)

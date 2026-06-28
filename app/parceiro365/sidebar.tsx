@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutGrid, Users, Award, Mail, Gift, Building2, type LucideIcon } from "lucide-react"
+import { LayoutGrid, Users, Award, Mail, CalendarDays, Gift, Building2, type LucideIcon } from "lucide-react"
 
 type Item = { href: string; label: string; icon: LucideIcon; exact?: boolean }
 
@@ -24,6 +24,7 @@ export function Sidebar({
     { href: "/parceiro365/alunos", label: "Alunos", icon: Users },
     { href: "/parceiro365/certificados", label: "Certificados", icon: Award },
     { href: "/parceiro365/convites", label: "Convites", icon: Mail },
+    { href: "/parceiro365/eventos", label: "Eventos", icon: CalendarDays },
     { href: "/parceiro365/sorteios", label: "Sorteios", icon: Gift },
   ]
   if (role === "super_admin") {
