@@ -118,9 +118,13 @@ export type InviteMeta = {
 export function InviteEditor({
   headerRight,
   onGenerated,
+  embedded,
 }: {
   headerRight?: React.ReactNode
   onGenerated?: (meta: InviteMeta) => void
+  // embedded=true: preenche a altura do container (uso dentro do portal),
+  // em vez de ocupar a tela inteira (100vh).
+  embedded?: boolean
 }) {
   const [state, setState] = useState<EditorState>(INITIAL_STATE)
   const stageRef = useRef<HTMLDivElement>(null)
@@ -343,7 +347,7 @@ export function InviteEditor({
     <div
       style={{
         display: "flex",
-        height: "100vh",
+        height: embedded ? "100%" : "100vh",
         width: "100%",
         fontFamily: "var(--font-lato), -apple-system, 'Segoe UI', Roboto, sans-serif",
         background: "#f4f5f7",

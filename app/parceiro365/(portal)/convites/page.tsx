@@ -3,11 +3,11 @@ import { InvitesClient } from "./invites-client"
 
 export default function ConvitesModulePage() {
   return (
-    <>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
       <PageHeader title="Convites" subtitle="Geração de convites" />
-      <main style={{ flex: 1, padding: "26px 28px 56px" }}>
+      <div style={{ flex: 1, minHeight: 0 }}>
         <InvitesClient />
-      </main>
-    </>
+      </div>
+    </div>
   )
 }
