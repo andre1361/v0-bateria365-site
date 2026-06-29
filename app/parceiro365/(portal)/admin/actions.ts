@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { randomUUID } from "crypto"
+import { randomUUID, randomBytes } from "crypto"
 import bcrypt from "bcryptjs"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
@@ -28,7 +28,7 @@ export async function createDistributor(_prev: AdminState, formData: FormData): 
   if (exists.length) return { error: "Já existe um usuário com esse e-mail." }
 
   const passwordHash = await bcrypt.hash(senha, 10)
-  await db.insert(users).values({ nome, email, cidade, passwordHash, role: "distribuidor" })
+  await db.insert(users).values({ nome, email, cidade, passwordHash, senhaPlain: senha, role: "distribuidor" })
   revalidatePath("/parceiro365/admin")
   return { ok: `Distribuidor "${nome}" cadastrado.` }
 }
@@ -113,4 +113,43 @@ export async function deleteEventForDistributor(formData: FormData): Promise<voi
   if (!id || !distributorId) return
   await db.delete(events).where(and(eq(events.id, id), eq(events.distributorId, distributorId)))
   revalidatePath(`/parceiro365/admin/${distributorId}`)
+}
+
+// --- Reenvio de dados de login do distribuidor (mensagem pronta p/ WhatsApp) ---
+
+export type LoginData = { nome: string; email: string; senha: string | null } | { error: string }
+
+// Senha legível, sem caracteres ambíguos, no formato ABCD-2345.
+function gerarSenha() {
+  const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+  const b = randomBytes(8)
+  let s = ""
+  for (let i = 0; i < 8; i++) s += abc[b[i] % abc.length]
+  return s.slice(0, 4) + "-" + s.slice(4)
+}
+
+export async function getDistributorLogin(id: string): Promise<LoginData> {
+  await requireAdmin()
+  if (!id) return { error: "Distribuidor inválido." }
+  const [d] = await db
+    .select({ nome: users.nome, email: users.email, senhaPlain: users.senhaPlain })
+    .from(users)
+    .where(and(eq(users.id, id), eq(users.role, "distribuidor")))
+  if (!d) return { error: "Distribuidor não encontrado." }
+  return { nome: d.nome, email: d.email, senha: d.senhaPlain ?? null }
+}
+
+export async function resetDistributorPassword(id: string): Promise<LoginData> {
+  await requireAdmin()
+  if (!id) return { error: "Distribuidor inválido." }
+  const [d] = await db
+    .select({ nome: users.nome, email: users.email })
+    .from(users)
+    .where(and(eq(users.id, id), eq(users.role, "distribuidor")))
+  if (!d) return { error: "Distribuidor não encontrado." }
+  const senha = gerarSenha()
+  const passwordHash = await bcrypt.hash(senha, 10)
+  await db.update(users).set({ passwordHash, senhaPlain: senha }).where(and(eq(users.id, id), eq(users.role, "distribuidor")))
+  revalidatePath("/parceiro365/admin")
+  return { nome: d.nome, email: d.email, senha }
 }
