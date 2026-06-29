@@ -103,17 +103,9 @@ export function AdminClient({ distribuidores }: { distribuidores: Dist[] }) {
           <label style={label}>Cidade</label>
           <input className="pf365" name="cidade" placeholder="Florianópolis" style={field} />
 
-          <label style={label}>
-            Senha <span style={{ color: "#d6442f" }}>*</span>
-          </label>
-          <input
-            className="pf365"
-            name="senha"
-            type="text"
-            placeholder="mín. 6 caracteres"
-            style={{ ...field, marginBottom: 18 }}
-            required
-          />
+          <p style={{ margin: "2px 0 18px", fontSize: 12, color: "#8a94a3", lineHeight: 1.5 }}>
+            🔑 A senha é gerada automaticamente. Depois, use <strong style={{ color: "#41506a" }}>Enviar login</strong> para copiar o acesso e mandar pro distribuidor.
+          </p>
 
           <button
             type="submit"
