@@ -179,7 +179,7 @@ export function TrainingHub({
           <button type="button" onClick={() => copiar("aberto", linkAberto)} style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 9, fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
             <Copy size={14} /> {copiado === "aberto" ? "Copiado!" : "Copiar link aberto (qualquer pessoa)"}
           </button>
-          <Link href="/parceiro365/convites" style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 9, fontSize: 12.5, fontWeight: 700, textDecoration: "none" }}>
+          <Link href={`/parceiro365/convites?evento=${ev.id}`} style={{ display: "inline-flex", alignItems: "center", gap: 7, height: 38, padding: "0 14px", background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 9, fontSize: 12.5, fontWeight: 700, textDecoration: "none" }}>
             <ExternalLink size={14} /> Criar imagem do convite
           </Link>
         </div>

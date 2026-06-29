@@ -19,18 +19,21 @@ export function Sidebar({
 }) {
   const pathname = usePathname()
 
-  const items: Item[] = [
-    { href: "/parceiro365", label: "Visão geral", icon: LayoutGrid, exact: true },
-    { href: "/parceiro365/eventos", label: "Treinamentos", icon: CalendarDays },
-    { href: "/parceiro365/empresas", label: "Empresas", icon: Store },
-    { href: "/parceiro365/alunos", label: "Alunos", icon: Users },
-    { href: "/parceiro365/certificados", label: "Certificados", icon: Award },
-    { href: "/parceiro365/convites", label: "Arte do convite", icon: Mail },
-    { href: "/parceiro365/sorteios", label: "Sorteios", icon: Gift },
-  ]
-  if (role === "super_admin") {
-    items.unshift({ href: "/parceiro365/admin", label: "Distribuidores", icon: Building2 })
-  }
+  const items: Item[] =
+    role === "super_admin"
+      ? [
+          { href: "/parceiro365", label: "Visão geral", icon: LayoutGrid, exact: true },
+          { href: "/parceiro365/admin", label: "Distribuidores", icon: Building2 },
+        ]
+      : [
+          { href: "/parceiro365", label: "Visão geral", icon: LayoutGrid, exact: true },
+          { href: "/parceiro365/eventos", label: "Treinamentos", icon: CalendarDays },
+          { href: "/parceiro365/empresas", label: "Empresas", icon: Store },
+          { href: "/parceiro365/alunos", label: "Alunos", icon: Users },
+          { href: "/parceiro365/certificados", label: "Certificados", icon: Award },
+          { href: "/parceiro365/convites", label: "Arte do convite", icon: Mail },
+          { href: "/parceiro365/sorteios", label: "Sorteios", icon: Gift },
+        ]
 
   const isActive = (it: Item) => (it.exact ? pathname === it.href : pathname.startsWith(it.href))
 

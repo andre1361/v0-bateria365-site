@@ -16,8 +16,8 @@ type EventoLite = {
 
 // Editor de convites embutido no portal, com seletor para auto-preencher os
 // dados a partir de um evento cadastrado.
-export function InvitesClient({ eventos, distribuidorNome }: { eventos: EventoLite[]; distribuidorNome: string }) {
-  const [eventId, setEventId] = useState("")
+export function InvitesClient({ eventos, distribuidorNome, initialEventId = "" }: { eventos: EventoLite[]; distribuidorNome: string; initialEventId?: string }) {
+  const [eventId, setEventId] = useState(initialEventId)
   const ev = eventos.find((e) => e.id === eventId)
 
   const initial: Partial<EditorState> | undefined = ev
