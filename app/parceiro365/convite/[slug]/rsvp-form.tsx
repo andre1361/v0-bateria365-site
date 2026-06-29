@@ -1,7 +1,8 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
+import { useActionState, useEffect, useState } from "react"
 import { confirmAttendance, type RsvpState } from "./actions"
+import { maskPhone } from "@/lib/phone"
 
 const initial: RsvpState = {}
 const field: React.CSSProperties = {
@@ -18,6 +19,7 @@ const field: React.CSSProperties = {
 
 export function RsvpForm({ slug }: { slug: string }) {
   const [state, action, pending] = useActionState(confirmAttendance, initial)
+  const [tel, setTel] = useState("")
 
   useEffect(() => {
     if (state.ok) {
@@ -47,7 +49,17 @@ export function RsvpForm({ slug }: { slug: string }) {
       <p style={{ margin: "4px 0 16px", fontSize: 13.5, color: "#8a94a3" }}>Preencha seus dados para garantir seu lugar.</p>
 
       <input className="pf365" name="nome" placeholder="Seu nome completo *" required style={field} />
-      <input className="pf365" name="telefone" type="tel" placeholder="WhatsApp (DDD + número) *" required style={field} />
+      <input
+        className="pf365"
+        name="telefone"
+        type="tel"
+        inputMode="numeric"
+        value={tel}
+        onChange={(e) => setTel(maskPhone(e.target.value))}
+        placeholder="WhatsApp (DDD + número) *"
+        required
+        style={field}
+      />
       <input className="pf365" name="email" type="email" placeholder="Seu e-mail" style={field} />
       <input className="pf365" name="empresa" placeholder="Sua empresa / loja" style={field} />
 

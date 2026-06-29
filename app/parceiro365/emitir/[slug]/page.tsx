@@ -29,26 +29,9 @@ export default async function EmitirPage({ params }: { params: Promise<{ slug: s
 
   return (
     <div style={{ minHeight: "100vh", background: "#eef1f6", color: "#1f2733" }}>
-      <div style={{ height: 60, background: "#04377f", display: "flex", alignItems: "center", padding: "0 22px", gap: 11, color: "#fff" }}>
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 8,
-            background: "#f9b801",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 800,
-            color: "#04377f",
-            fontSize: 13,
-          }}
-        >
-          365
-        </div>
-        <span style={{ fontWeight: 800 }}>
-          Parceiro <span style={{ color: "#f9b801" }}>365</span>
-        </span>
+      <div style={{ height: 64, background: "#04377f", display: "flex", alignItems: "center", padding: "0 22px", gap: 11, color: "#fff" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/logo-bateria365-escuro.png" alt="Bateria 365" style={{ height: 32, width: "auto" }} />
         <span style={{ marginLeft: "auto", fontSize: 12.5, color: "#bcd0ec" }}>Emissão de certificado</span>
       </div>
 

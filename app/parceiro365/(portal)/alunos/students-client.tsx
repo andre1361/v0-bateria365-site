@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react"
 import { createStudent, importStudents, deleteStudent, type StudentState } from "./actions"
+import { maskPhone } from "@/lib/phone"
 
 type Aluno = { id: string; nome: string; email: string; telefone: string; empresa: string }
 
@@ -33,6 +34,7 @@ export function StudentsClient({ alunos }: { alunos: Aluno[] }) {
   const [createState, createAction, creating] = useActionState(createStudent, initial)
   const [importState, importAction, importing] = useActionState(importStudents, initial)
   const [lista, setLista] = useState("")
+  const [tel, setTel] = useState("")
 
   const exportarCSV = () => {
     if (!alunos.length) return
@@ -73,7 +75,7 @@ export function StudentsClient({ alunos }: { alunos: Aluno[] }) {
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: 1 }}>
               <label style={label}>Telefone</label>
-              <input className="pf365" name="telefone" placeholder="(00) 00000-0000" style={field} />
+              <input className="pf365" name="telefone" inputMode="numeric" value={tel} onChange={(e) => setTel(maskPhone(e.target.value))} placeholder="(00) 00000-0000" style={field} />
             </div>
             <div style={{ flex: 1 }}>
               <label style={label}>Empresa</label>

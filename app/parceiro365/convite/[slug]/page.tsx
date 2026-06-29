@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { and, eq } from "drizzle-orm"
-import { CalendarDays, MapPin, BookOpen, User, Instagram } from "lucide-react"
+import { CalendarDays, MapPin, BookOpen, Instagram } from "lucide-react"
 import { db } from "@/db"
 import { events, users } from "@/db/schema"
 import { InvitePreview } from "@/app/convites/invite-preview"
@@ -60,14 +60,13 @@ export default async function ConvitePage({ params }: { params: Promise<{ slug: 
     ev.dataISO ? { icon: CalendarDays, label: "Data", value: dataFmt + (ev.horario ? ` · ${ev.horario}` : "") } : null,
     ev.local ? { icon: MapPin, label: "Local", value: ev.local } : null,
     ev.modulo ? { icon: BookOpen, label: "Módulo", value: ev.modulo } : null,
-    ev.responsavel ? { icon: User, label: "Responsável", value: ev.responsavel } : null,
   ].filter(Boolean) as { icon: typeof CalendarDays; label: string; value: string }[]
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(180deg,#eef1f6 0%,#dde6f2 100%)", color: "#1f2733" }}>
-      <div style={{ height: 56, background: "#04377f", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, color: "#fff" }}>
-        <div style={{ width: 28, height: 28, borderRadius: 8, background: "#f9b801", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "#04377f", fontSize: 12 }}>365</div>
-        <span style={{ fontWeight: 800 }}>Parceiro <span style={{ color: "#f9b801" }}>365</span></span>
+      <div style={{ height: 64, background: "#04377f", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/logo-bateria365-escuro.png" alt="Bateria 365" style={{ height: 34, width: "auto" }} />
       </div>
 
       <div style={{ maxWidth: 540, margin: "0 auto", padding: "24px 16px 64px" }}>
