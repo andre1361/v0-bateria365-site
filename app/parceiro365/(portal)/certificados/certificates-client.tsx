@@ -62,18 +62,24 @@ export function CertificatesClient({
   slug,
   alunos,
   empresas,
+  initialLista = "",
+  initialData = "",
+  initialTab,
 }: {
   distribuidor: string
   cidade: string
   slug: string | null
   alunos: Aluno[]
   empresas: Empresa[]
+  initialLista?: string
+  initialData?: string
+  initialTab?: Tab
 }) {
-  const [tab, setTab] = useState<Tab>("ind")
+  const [tab, setTab] = useState<Tab>(initialTab || "ind")
   const [nome, setNome] = useState("")
   const [empresa, setEmpresa] = useState("")
-  const [data, setData] = useState("")
-  const [loteText, setLoteText] = useState("")
+  const [data, setData] = useState(initialData)
+  const [loteText, setLoteText] = useState(initialLista)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [busca, setBusca] = useState("")
   const [empresaFiltro, setEmpresaFiltro] = useState("")
@@ -82,10 +88,12 @@ export function CertificatesClient({
   const [linkState, linkAction, savingLink] = useActionState(saveEmitLink, linkInitial)
 
   useEffect(() => {
-    const n = new Date()
-    setData(`${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`)
+    if (!initialData) {
+      const n = new Date()
+      setData(`${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`)
+    }
     setOrigin(window.location.origin)
-  }, [])
+  }, [initialData])
 
   const currentSlug = linkState.slug || slug
   const emitUrl = currentSlug ? `${origin}/parceiro365/emitir/${currentSlug}` : ""

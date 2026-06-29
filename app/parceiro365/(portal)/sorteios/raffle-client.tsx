@@ -18,8 +18,8 @@ async function fireConfetti() {
   }
 }
 
-export function RaffleClient({ alunos }: { alunos: string[] }) {
-  const [participantes, setParticipantes] = useState<Part[]>([])
+export function RaffleClient({ alunos, participantesIniciais = [] }: { alunos: string[]; participantesIniciais?: string[] }) {
+  const [participantes, setParticipantes] = useState<Part[]>(() => participantesIniciais.map((n, i) => ({ id: "i" + i + "_" + n, nome: n })))
   const [novoPart, setNovoPart] = useState("")
   const [historico, setHistorico] = useState<string[]>([])
   const [semRepeticao, setSemRepeticao] = useState(true)
