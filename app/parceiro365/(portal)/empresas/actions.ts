@@ -3,10 +3,39 @@
 import { revalidatePath } from "next/cache"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
-import { companies, students } from "@/db/schema"
+import { companies, students, sellers } from "@/db/schema"
 import { requireUser } from "../../guard"
 
 export type CompanyState = { error?: string; ok?: string }
+
+function normName(x: string) {
+  return (x || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(new RegExp("[\\u0300-\\u036f]", "g"), "")
+}
+
+// Resolve um vendedor existente por nome (normalizado) ou cria um novo.
+async function resolveSeller(distributorId: string, nome: string): Promise<string | null> {
+  const n = normName(nome)
+  if (!n) return null
+  const existing = await db.select({ id: sellers.id, nome: sellers.nome }).from(sellers).where(eq(sellers.distributorId, distributorId))
+  const match = existing.find((s) => normName(s.nome) === n)
+  if (match) return match.id
+  const [created] = await db.insert(sellers).values({ distributorId, nome: nome.trim() }).returning({ id: sellers.id })
+  return created?.id ?? null
+}
+
+// Resolve o vendedor escolhido no formulário (id existente ou novo nome digitado).
+async function resolveSellerFromForm(distributorId: string, formData: FormData): Promise<string | null> {
+  const sellerNew = String(formData.get("sellerNew") || "").trim()
+  if (sellerNew) return resolveSeller(distributorId, sellerNew)
+  const sellerId = String(formData.get("sellerId") || "")
+  if (!sellerId) return null
+  const [s] = await db.select({ id: sellers.id }).from(sellers).where(and(eq(sellers.id, sellerId), eq(sellers.distributorId, distributorId)))
+  return s?.id ?? null
+}
 
 function readFields(formData: FormData) {
   const previstos = String(formData.get("convidadosPrevistos") || "").replace(/\D/g, "")
@@ -26,9 +55,10 @@ export async function saveCompany(_prev: CompanyState, formData: FormData): Prom
   const id = String(formData.get("id") || "")
   const f = readFields(formData)
   if (!f.nome) return { error: "Informe o nome da empresa." }
+  const sellerId = await resolveSellerFromForm(u.id, formData)
 
   if (id) {
-    await db.update(companies).set(f).where(and(eq(companies.id, id), eq(companies.distributorId, u.id)))
+    await db.update(companies).set({ ...f, sellerId }).where(and(eq(companies.id, id), eq(companies.distributorId, u.id)))
     // mantém o nome desnormalizado nos alunos já vinculados
     await db
       .update(students)
@@ -39,9 +69,23 @@ export async function saveCompany(_prev: CompanyState, formData: FormData): Prom
     return { ok: "Empresa atualizada." }
   }
 
-  await db.insert(companies).values({ ...f, distributorId: u.id })
+  await db.insert(companies).values({ ...f, sellerId, distributorId: u.id })
   revalidatePath("/parceiro365/empresas")
   return { ok: "Empresa cadastrada." }
+}
+
+export async function assignSeller(formData: FormData): Promise<void> {
+  const u = await requireUser()
+  const companyId = String(formData.get("companyId") || "")
+  if (!companyId) return
+  const sellerIdRaw = String(formData.get("sellerId") || "")
+  let sellerId: string | null = null
+  if (sellerIdRaw) {
+    const [s] = await db.select({ id: sellers.id }).from(sellers).where(and(eq(sellers.id, sellerIdRaw), eq(sellers.distributorId, u.id)))
+    sellerId = s?.id ?? null
+  }
+  await db.update(companies).set({ sellerId }).where(and(eq(companies.id, companyId), eq(companies.distributorId, u.id)))
+  revalidatePath("/parceiro365/empresas")
 }
 
 export async function deleteCompany(formData: FormData): Promise<void> {

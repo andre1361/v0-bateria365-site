@@ -1,10 +1,11 @@
 "use client"
 
 import { useActionState, useEffect, useState } from "react"
-import { saveCompany, deleteCompany, addStudentToCompany, removeStudent, type CompanyState } from "./actions"
+import { saveCompany, deleteCompany, addStudentToCompany, removeStudent, assignSeller, type CompanyState } from "./actions"
 import { maskPhone } from "@/lib/phone"
 
 type Aluno = { id: string; nome: string; email: string; telefone: string }
+type Seller = { id: string; nome: string }
 type Empresa = {
   id: string
   nome: string
@@ -14,6 +15,8 @@ type Empresa = {
   email: string
   convidadosPrevistos: number
   observacoes: string
+  sellerId: string | null
+  sellerNome: string
   cadastrados: number
   confirmados: number
   alunos: Aluno[]
@@ -27,9 +30,10 @@ type Form = {
   email: string
   convidadosPrevistos: string
   observacoes: string
+  sellerId: string
 }
 
-const EMPTY: Form = { id: "", nome: "", cidade: "", responsavel: "", telefone: "", email: "", convidadosPrevistos: "", observacoes: "" }
+const EMPTY: Form = { id: "", nome: "", cidade: "", responsavel: "", telefone: "", email: "", convidadosPrevistos: "", observacoes: "", sellerId: "" }
 const initial: CompanyState = {}
 
 const field: React.CSSProperties = {
@@ -54,13 +58,17 @@ function iniciais(nome: string) {
     .join("")
 }
 
-export function CompaniesClient({ empresas, semEmpresa }: { empresas: Empresa[]; semEmpresa: number }) {
+export function CompaniesClient({ empresas, semEmpresa, sellers }: { empresas: Empresa[]; semEmpresa: number; sellers: Seller[] }) {
   const [state, action, saving] = useActionState(saveCompany, initial)
   const [form, setForm] = useState<Form>(EMPTY)
+  const [sellerNew, setSellerNew] = useState("")
   const [expandido, setExpandido] = useState<string | null>(null)
 
   useEffect(() => {
-    if (state.ok) setForm(EMPTY)
+    if (state.ok) {
+      setForm(EMPTY)
+      setSellerNew("")
+    }
   }, [state])
 
   const set = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -76,7 +84,9 @@ export function CompaniesClient({ empresas, semEmpresa }: { empresas: Empresa[];
       email: c.email,
       convidadosPrevistos: c.convidadosPrevistos ? String(c.convidadosPrevistos) : "",
       observacoes: c.observacoes,
+      sellerId: c.sellerId || "",
     })
+    setSellerNew("")
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
@@ -147,6 +157,22 @@ export function CompaniesClient({ empresas, semEmpresa }: { empresas: Empresa[];
             placeholder="Ex.: alinhado pelo gerente; trazer crachás…"
             style={{ ...field, height: 60, padding: "10px 12px", resize: "vertical" }}
           />
+
+          <label style={label}>Vendedor (da distribuidora)</label>
+          <select className="pf365" value={form.sellerId} onChange={(e) => setForm((f) => ({ ...f, sellerId: e.target.value }))} style={{ ...field, padding: "0 10px" }}>
+            <option value="">— Sem vendedor —</option>
+            {sellers.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nome}
+              </option>
+            ))}
+            <option value="__new__">— Adicionar novo vendedor —</option>
+          </select>
+          {form.sellerId === "__new__" && (
+            <input className="pf365" value={sellerNew} onChange={(e) => setSellerNew(e.target.value)} placeholder="Nome do vendedor" style={field} />
+          )}
+          <input type="hidden" name="sellerId" value={form.sellerId === "__new__" || form.sellerId === "" ? "" : form.sellerId} />
+          <input type="hidden" name="sellerNew" value={form.sellerId === "__new__" ? sellerNew : ""} />
 
           <div style={{ display: "flex", gap: 8 }}>
             <button
@@ -223,6 +249,28 @@ export function CompaniesClient({ empresas, semEmpresa }: { empresas: Empresa[];
                     >
                       ×
                     </button>
+                  </form>
+                </div>
+
+                {/* Vendedor responsável (reatribuição rápida) */}
+                <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12, color: "#9298a6", fontWeight: 700 }}>Vendedor</span>
+                  <form action={assignSeller} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <input type="hidden" name="companyId" value={e.id} />
+                    <select
+                      key={e.sellerId || "none"}
+                      name="sellerId"
+                      defaultValue={e.sellerId || ""}
+                      onChange={(ev) => ev.currentTarget.form?.requestSubmit()}
+                      style={{ height: 30, padding: "0 8px", fontSize: 12.5, border: "1.5px solid #dde3ec", borderRadius: 8, color: "#1f2733", background: "#fff", fontWeight: 600, maxWidth: 220 }}
+                    >
+                      <option value="">Sem vendedor</option>
+                      {sellers.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nome}
+                        </option>
+                      ))}
+                    </select>
                   </form>
                 </div>
 

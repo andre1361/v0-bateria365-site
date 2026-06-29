@@ -1,6 +1,6 @@
 import { asc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
-import { companies, students, events, rsvps } from "@/db/schema"
+import { companies, students, events, rsvps, sellers } from "@/db/schema"
 import { PageHeader } from "../../page-header"
 import { requireUser } from "../../guard"
 import { CompaniesClient } from "./companies-client"
@@ -17,6 +17,12 @@ export default async function EmpresasPage() {
   const u = await requireUser()
 
   const comps = await db.select().from(companies).where(eq(companies.distributorId, u.id)).orderBy(asc(companies.nome))
+  const sellersRows = await db
+    .select({ id: sellers.id, nome: sellers.nome })
+    .from(sellers)
+    .where(eq(sellers.distributorId, u.id))
+    .orderBy(asc(sellers.nome))
+  const sellerById = new Map(sellersRows.map((s) => [s.id, s.nome]))
   const studs = await db
     .select({
       id: students.id,
@@ -51,6 +57,8 @@ export default async function EmpresasPage() {
       email: c.email,
       convidadosPrevistos: c.convidadosPrevistos,
       observacoes: c.observacoes,
+      sellerId: c.sellerId,
+      sellerNome: c.sellerId ? sellerById.get(c.sellerId) ?? "" : "",
       cadastrados: alunos.length,
       confirmados: rsvpByEmpresa.get(norm(c.nome)) || 0,
       alunos: alunos.map((a) => ({ id: a.id, nome: a.nome, email: a.email, telefone: a.telefone })),
@@ -63,7 +71,7 @@ export default async function EmpresasPage() {
     <>
       <PageHeader title="Empresas" subtitle="Clientes e convidados por empresa" />
       <main style={{ flex: 1, padding: "26px 28px 56px" }}>
-        <CompaniesClient empresas={empresas} semEmpresa={semEmpresa} />
+        <CompaniesClient empresas={empresas} semEmpresa={semEmpresa} sellers={sellersRows} />
       </main>
     </>
   )

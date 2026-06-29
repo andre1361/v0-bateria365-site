@@ -15,12 +15,26 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
+// Vendedores da distribuidora (equipe do distribuidor), atribuíveis às empresas.
+export const sellers = pgTable("sellers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  distributorId: uuid("distributor_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  nome: text("nome").notNull(),
+  telefone: text("telefone").notNull().default(""),
+  email: text("email").notNull().default(""),
+  ativo: boolean("ativo").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
 // Empresas (clientes do distribuidor) que alinham convidados para os treinamentos.
 export const companies = pgTable("companies", {
   id: uuid("id").defaultRandom().primaryKey(),
   distributorId: uuid("distributor_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  sellerId: uuid("seller_id").references(() => sellers.id, { onDelete: "set null" }),
   nome: text("nome").notNull(),
   cidade: text("cidade").notNull().default(""),
   responsavel: text("responsavel").notNull().default(""),
@@ -133,6 +147,7 @@ export const rsvps = pgTable("rsvps", {
 })
 
 export type User = typeof users.$inferSelect
+export type Seller = typeof sellers.$inferSelect
 export type Company = typeof companies.$inferSelect
 export type Student = typeof students.$inferSelect
 export type Certificate = typeof certificates.$inferSelect
