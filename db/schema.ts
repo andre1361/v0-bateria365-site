@@ -8,6 +8,9 @@ export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
+  // Senha em texto do distribuidor — guardada só para o admin reenviar o acesso
+  // (ex.: por WhatsApp). Nula para contas antigas/super admin.
+  senhaPlain: text("senha_plain"),
   role: roleEnum("role").notNull().default("distribuidor"),
   nome: text("nome").notNull(),
   cidade: text("cidade").notNull().default(""),

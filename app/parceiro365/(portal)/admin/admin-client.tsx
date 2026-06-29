@@ -1,8 +1,8 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useEffect, useState } from "react"
 import Link from "next/link"
-import { createDistributor, toggleDistributor, deleteDistributor, type AdminState } from "./actions"
+import { createDistributor, toggleDistributor, deleteDistributor, getDistributorLogin, resetDistributorPassword, type AdminState } from "./actions"
 
 type Dist = { id: string; nome: string; email: string; cidade: string; ativo: boolean }
 
@@ -29,6 +29,52 @@ const label: React.CSSProperties = {
 
 export function AdminClient({ distribuidores }: { distribuidores: Dist[] }) {
   const [state, action, pending] = useActionState(createDistributor, initial)
+  const [origin, setOrigin] = useState("")
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  useEffect(() => setOrigin(window.location.origin), [])
+
+  const enviarLogin = async (id: string) => {
+    setBusyId(id)
+    try {
+      let data = await getDistributorLogin(id)
+      if ("error" in data) {
+        alert(data.error)
+        return
+      }
+      if (!data.senha) {
+        if (!confirm("A senha deste distribuidor não está guardada (cadastro antigo). Gerar uma nova senha agora? A senha anterior deixará de funcionar.")) return
+        const reset = await resetDistributorPassword(id)
+        if ("error" in reset) {
+          alert(reset.error)
+          return
+        }
+        data = reset
+      }
+      const msg = [
+        "Olá! 👋",
+        "",
+        "Você agora tem acesso à plataforma *Parceiro 365* da Bateria 365.",
+        "",
+        `Distribuidora: *${data.nome}*`,
+        "",
+        "Na plataforma você pode gerenciar os convites por empresa, os alunos e os sorteios dos seus treinamentos.",
+        "",
+        `🔗 Acesse: ${origin}/parceiro365`,
+        `📧 E-mail: ${data.email}`,
+        `🔑 Senha: ${data.senha}`,
+        "",
+        "Qualquer dúvida, é só chamar! 💛",
+      ].join("\n")
+      await navigator.clipboard?.writeText(msg)
+      setCopiedId(id)
+      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 2400)
+    } catch {
+      alert("Não foi possível copiar os dados de login.")
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start", maxWidth: 1080 }}>
@@ -135,6 +181,26 @@ export function AdminClient({ distribuidores }: { distribuidores: Dist[] }) {
                     {[d.email, d.cidade].filter(Boolean).join(" · ")}
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => enviarLogin(d.id)}
+                  disabled={busyId === d.id}
+                  title="Copiar mensagem de acesso para enviar no WhatsApp"
+                  style={{
+                    height: 32,
+                    padding: "0 12px",
+                    background: copiedId === d.id ? "#0f7a43" : "#f9b801",
+                    color: copiedId === d.id ? "#fff" : "#04377f",
+                    border: "none",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 800,
+                    cursor: busyId === d.id ? "wait" : "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {copiedId === d.id ? "✓ Copiado!" : busyId === d.id ? "…" : "Enviar login"}
+                </button>
                 <Link
                   href={`/parceiro365/admin/${d.id}`}
                   style={{ height: 32, display: "inline-flex", alignItems: "center", padding: "0 12px", background: "#04377f", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none" }}
