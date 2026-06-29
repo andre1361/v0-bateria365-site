@@ -23,11 +23,12 @@ export default async function EventosPage() {
     : []
 
   const comps = await db
-    .select({ nome: companies.nome, meta: companies.convidadosPrevistos })
+    .select({ id: companies.id, nome: companies.nome, meta: companies.convidadosPrevistos })
     .from(companies)
     .where(eq(companies.distributorId, u.id))
     .orderBy(asc(companies.nome))
   const metaByName = new Map(comps.map((c) => [norm(c.nome), c.meta]))
+  const empresas = comps.map((c) => ({ id: c.id, nome: c.nome }))
 
   const eventos = evs.map((e) => {
     const conf = allRsvps.filter((r) => r.eventId === e.id)
@@ -61,7 +62,7 @@ export default async function EventosPage() {
     <>
       <PageHeader title="Eventos" subtitle="Convites com confirmação de presença" />
       <main style={{ flex: 1, padding: "26px 28px 56px" }}>
-        <EventsClient eventos={eventos} />
+        <EventsClient eventos={eventos} empresas={empresas} />
       </main>
     </>
   )

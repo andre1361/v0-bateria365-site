@@ -50,10 +50,11 @@ const field: React.CSSProperties = {
 }
 const label: React.CSSProperties = { display: "block", fontSize: 12, fontWeight: 700, color: "#41506a", marginBottom: 5 }
 
-export function EventsClient({ eventos }: { eventos: Evento[] }) {
+export function EventsClient({ eventos, empresas }: { eventos: Evento[]; empresas: { id: string; nome: string }[] }) {
   const [state, action, saving] = useActionState(saveEvent, initial)
   const [form, setForm] = useState<Form>(EMPTY)
   const [expandido, setExpandido] = useState<string | null>(null)
+  const [linksDe, setLinksDe] = useState<string | null>(null)
   const [origin, setOrigin] = useState("")
   const [copiado, setCopiado] = useState<string | null>(null)
 
@@ -66,11 +67,18 @@ export function EventsClient({ eventos }: { eventos: Evento[] }) {
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
   const linkDe = (slug: string) => `${origin}/parceiro365/convite/${slug}`
+  const linkEquipe = (slug: string, companyId: string) => `${origin}/parceiro365/convite/${slug}/equipe/${companyId}`
 
   const copiar = (slug: string) => {
     navigator.clipboard?.writeText(linkDe(slug))
     setCopiado(slug)
     setTimeout(() => setCopiado((c) => (c === slug ? null : c)), 1800)
+  }
+
+  const copiarLink = (key: string, url: string) => {
+    navigator.clipboard?.writeText(url)
+    setCopiado(key)
+    setTimeout(() => setCopiado((c) => (c === key ? null : c)), 1800)
   }
 
   const exportarCSV = (ev: Evento) => {
@@ -171,6 +179,51 @@ export function EventsClient({ eventos }: { eventos: Evento[] }) {
                   {copiado === ev.slug ? "Copiado!" : "Copiar"}
                 </button>
                 <a href={linkDe(ev.slug)} target="_blank" rel="noreferrer" style={{ height: 38, display: "inline-flex", alignItems: "center", padding: "0 14px", background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 9, fontSize: 12.5, fontWeight: 700, textDecoration: "none" }}>Abrir</a>
+              </div>
+
+              <div style={{ marginTop: 10 }}>
+                {empresas.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: 12, color: "#9aa4b2" }}>
+                    Cadastre empresas para gerar um link por empresa (a empresa adiciona a própria equipe).
+                  </p>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setLinksDe((x) => (x === ev.id ? null : ev.id))}
+                      style={{ background: "none", border: "none", color: "#04377f", fontSize: 12.5, fontWeight: 700, cursor: "pointer", padding: 0 }}
+                    >
+                      🔗 Link por empresa — a empresa cadastra a equipe {linksDe === ev.id ? "▲" : "▼"}
+                    </button>
+                    {linksDe === ev.id && (
+                      <div style={{ marginTop: 8, border: "1px solid #eef1f5", borderRadius: 10, overflow: "hidden" }}>
+                        {empresas.map((c) => {
+                          const key = `${ev.slug}::${c.id}`
+                          return (
+                            <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderBottom: "1px solid #f3f5f9" }}>
+                              <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 700, color: "#1f2733", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.nome}</span>
+                              <button
+                                type="button"
+                                onClick={() => copiarLink(key, linkEquipe(ev.slug, c.id))}
+                                style={{ height: 30, padding: "0 12px", background: "#04377f", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                              >
+                                {copiado === key ? "Copiado!" : "Copiar link"}
+                              </button>
+                              <a
+                                href={linkEquipe(ev.slug, c.id)}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ height: 30, display: "inline-flex", alignItems: "center", padding: "0 10px", background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none" }}
+                              >
+                                Abrir
+                              </a>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12 }}>
