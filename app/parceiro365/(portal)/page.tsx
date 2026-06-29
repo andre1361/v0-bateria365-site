@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { count, eq, type SQL } from "drizzle-orm"
 import { db } from "@/db"
-import { students, certificates, raffles, invites, users } from "@/db/schema"
+import { students, certificates, raffles, invites, users, companies } from "@/db/schema"
 import { PageHeader } from "../page-header"
 import { requireUser } from "../guard"
 
@@ -16,8 +16,9 @@ export default async function OverviewPage() {
   const isAdmin = u.role === "super_admin"
   const uid = u.id
 
-  const [alunos, certs, sorteios, convites] = await Promise.all([
+  const [alunos, empresasCount, certs, sorteios, convites] = await Promise.all([
     countWhere(students, isAdmin ? undefined : eq(students.distributorId, uid)),
+    countWhere(companies, isAdmin ? undefined : eq(companies.distributorId, uid)),
     countWhere(certificates, isAdmin ? undefined : eq(certificates.distributorId, uid)),
     countWhere(raffles, isAdmin ? undefined : eq(raffles.distributorId, uid)),
     countWhere(invites, isAdmin ? undefined : eq(invites.distributorId, uid)),
@@ -27,6 +28,7 @@ export default async function OverviewPage() {
   const stats: { label: string; value: number }[] = [
     ...(isAdmin && distribuidores !== null ? [{ label: "Distribuidores", value: distribuidores }] : []),
     { label: "Alunos", value: alunos },
+    { label: "Empresas", value: empresasCount },
     { label: "Certificados", value: certs },
     { label: "Sorteios", value: sorteios },
     { label: "Convites", value: convites },
@@ -37,6 +39,7 @@ export default async function OverviewPage() {
       ? [{ href: "/parceiro365/admin", emoji: "🏢", title: "Gerenciar distribuidores", desc: "Cadastre e edite parceiros." }]
       : []),
     { href: "/parceiro365/alunos", emoji: "👤", title: "Cadastrar aluno", desc: "Nome, e-mail, telefone e empresa." },
+    { href: "/parceiro365/empresas", emoji: "🏢", title: "Cadastrar empresa", desc: "Convidados alinhados por empresa." },
     { href: "/parceiro365/certificados", emoji: "🏅", title: "Emitir certificado", desc: "Individual, em lote ou por link." },
     { href: "/parceiro365/convites", emoji: "✉️", title: "Gerar convite", desc: "Editor de convites integrado." },
     { href: "/parceiro365/sorteios", emoji: "🎁", title: "Novo sorteio", desc: "Sorteador online ao vivo." },

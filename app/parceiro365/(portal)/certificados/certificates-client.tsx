@@ -53,18 +53,21 @@ function dedupeByNome(rows: Row[]): Row[] {
   return out
 }
 
-type Aluno = { id: string; nome: string; empresa: string }
+type Aluno = { id: string; nome: string; empresa: string; companyId: string | null }
+type Empresa = { id: string; nome: string }
 
 export function CertificatesClient({
   distribuidor,
   cidade,
   slug,
   alunos,
+  empresas,
 }: {
   distribuidor: string
   cidade: string
   slug: string | null
   alunos: Aluno[]
+  empresas: Empresa[]
 }) {
   const [tab, setTab] = useState<Tab>("ind")
   const [nome, setNome] = useState("")
@@ -73,6 +76,7 @@ export function CertificatesClient({
   const [loteText, setLoteText] = useState("")
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [busca, setBusca] = useState("")
+  const [empresaFiltro, setEmpresaFiltro] = useState("")
   const [printRows, setPrintRows] = useState<Row[]>([])
   const [origin, setOrigin] = useState("")
   const [linkState, linkAction, savingLink] = useActionState(saveEmitLink, linkInitial)
@@ -90,9 +94,12 @@ export function CertificatesClient({
     .filter((a) => selectedIds.includes(a.id))
     .map((a) => ({ nome: a.nome, empresa: a.empresa, data }))
   const loteRows = dedupeByNome([...selecionados, ...parseLote(loteText, data)])
-  const alunosFiltrados = busca.trim()
-    ? alunos.filter((a) => a.nome.toLowerCase().includes(busca.trim().toLowerCase()))
-    : alunos
+  const alunosFiltrados = alunos.filter((a) => {
+    if (empresaFiltro === "__none__" && a.companyId) return false
+    if (empresaFiltro && empresaFiltro !== "__none__" && a.companyId !== empresaFiltro) return false
+    if (busca.trim() && !a.nome.toLowerCase().includes(busca.trim().toLowerCase())) return false
+    return true
+  })
 
   const imprimir = (rows: Row[]) => {
     if (!rows.length) return
@@ -216,6 +223,22 @@ export function CertificatesClient({
             {alunos.length > 0 && (
               <div style={{ marginBottom: 14 }}>
                 <label style={label}>Alunos cadastrados</label>
+                {empresas.length > 0 && (
+                  <select
+                    className="pf365"
+                    value={empresaFiltro}
+                    onChange={(e) => setEmpresaFiltro(e.target.value)}
+                    style={{ ...field, padding: "0 10px", marginBottom: 8 }}
+                  >
+                    <option value="">Todas as empresas</option>
+                    {empresas.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nome}
+                      </option>
+                    ))}
+                    <option value="__none__">Sem empresa</option>
+                  </select>
+                )}
                 <input className="pf365" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar aluno…" style={{ ...field, marginBottom: 8 }} />
                 <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <button type="button" onClick={() => setSelectedIds(alunosFiltrados.map((a) => a.id))} style={{ flex: 1, height: 32, background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>

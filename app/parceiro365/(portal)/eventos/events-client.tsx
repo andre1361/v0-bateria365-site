@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react"
 import { saveEvent, deleteEvent, type EventState } from "./actions"
 
 type Confirmado = { id: string; nome: string; telefone: string; email: string; empresa: string }
+type GrupoEmpresa = { empresa: string; count: number; meta: number }
 type Evento = {
   id: string
   titulo: string
@@ -17,9 +18,10 @@ type Evento = {
   template: string
   slug: string
   confirmados: Confirmado[]
+  porEmpresa: GrupoEmpresa[]
 }
 
-type Form = Omit<Evento, "confirmados" | "slug">
+type Form = Omit<Evento, "confirmados" | "slug" | "porEmpresa">
 
 const EMPTY: Form = {
   id: "",
@@ -182,6 +184,19 @@ export function EventsClient({ eventos }: { eventos: Evento[] }) {
 
               {expandido === ev.id && (
                 <div style={{ marginTop: 10, borderTop: "1px solid #eef1f5", paddingTop: 10 }}>
+                  {ev.porEmpresa.length > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: "#9298a6", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Por empresa</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {ev.porEmpresa.map((g) => (
+                          <span key={g.empresa} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 10px", background: "#eef4fc", color: "#04377f", borderRadius: 999, fontSize: 12.5, fontWeight: 700 }}>
+                            {g.empresa}
+                            <strong>{g.meta > 0 ? `${g.count}/${g.meta}` : g.count}</strong>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {ev.confirmados.length === 0 ? (
                     <p style={{ margin: 0, fontSize: 12.5, color: "#8a94a3" }}>Ninguém confirmou ainda.</p>
                   ) : (

@@ -1,10 +1,11 @@
 "use client"
 
-import { useActionState, useState } from "react"
+import { useActionState, useEffect, useState } from "react"
 import { createStudent, importStudents, deleteStudent, type StudentState } from "./actions"
 import { maskPhone } from "@/lib/phone"
 
-type Aluno = { id: string; nome: string; email: string; telefone: string; empresa: string }
+type Aluno = { id: string; nome: string; email: string; telefone: string; empresa: string; companyId: string | null }
+type Empresa = { id: string; nome: string }
 
 const initial: StudentState = {}
 
@@ -30,11 +31,29 @@ function iniciais(nome: string) {
     .join("")
 }
 
-export function StudentsClient({ alunos }: { alunos: Aluno[] }) {
+export function StudentsClient({ alunos, empresas }: { alunos: Aluno[]; empresas: Empresa[] }) {
   const [createState, createAction, creating] = useActionState(createStudent, initial)
   const [importState, importAction, importing] = useActionState(importStudents, initial)
   const [lista, setLista] = useState("")
   const [tel, setTel] = useState("")
+  const [empresaSel, setEmpresaSel] = useState("")
+  const [empresaLivre, setEmpresaLivre] = useState("")
+  const [empresaFiltro, setEmpresaFiltro] = useState("")
+
+  useEffect(() => {
+    if (createState?.ok) {
+      setTel("")
+      setEmpresaSel("")
+      setEmpresaLivre("")
+    }
+  }, [createState])
+
+  const alunosFiltrados =
+    empresaFiltro === ""
+      ? alunos
+      : empresaFiltro === "__none__"
+        ? alunos.filter((a) => !a.companyId)
+        : alunos.filter((a) => a.companyId === empresaFiltro)
 
   const exportarCSV = () => {
     if (!alunos.length) return
@@ -72,16 +91,25 @@ export function StudentsClient({ alunos }: { alunos: Aluno[] }) {
           <input className="pf365" name="nome" placeholder="Maria Oliveira" style={field} required />
           <label style={label}>E-mail</label>
           <input className="pf365" name="email" type="email" placeholder="maria@empresa.com" style={field} />
-          <div style={{ display: "flex", gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <label style={label}>Telefone</label>
-              <input className="pf365" name="telefone" inputMode="numeric" value={tel} onChange={(e) => setTel(maskPhone(e.target.value))} placeholder="(00) 00000-0000" style={field} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={label}>Empresa</label>
-              <input className="pf365" name="empresa" placeholder="Empresa" style={field} />
-            </div>
-          </div>
+          <label style={label}>Telefone</label>
+          <input className="pf365" name="telefone" inputMode="numeric" value={tel} onChange={(e) => setTel(maskPhone(e.target.value))} placeholder="(00) 00000-0000" style={field} />
+
+          <label style={label}>Empresa</label>
+          <select className="pf365" value={empresaSel} onChange={(e) => setEmpresaSel(e.target.value)} style={{ ...field, padding: "0 10px" }}>
+            <option value="">— Sem empresa —</option>
+            {empresas.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nome}
+              </option>
+            ))}
+            <option value="__other__">— Outra (digitar) —</option>
+          </select>
+          {empresaSel === "__other__" && (
+            <input className="pf365" value={empresaLivre} onChange={(e) => setEmpresaLivre(e.target.value)} placeholder="Nome da empresa" style={field} />
+          )}
+          <input type="hidden" name="companyId" value={empresaSel === "__other__" || empresaSel === "" ? "" : empresaSel} />
+          <input type="hidden" name="empresa" value={empresaSel === "__other__" ? empresaLivre : ""} />
+
           <button
             type="submit"
             disabled={creating}
@@ -167,41 +195,62 @@ export function StudentsClient({ alunos }: { alunos: Aluno[] }) {
             {importState?.error && <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "#c0392b", fontWeight: 600 }}>⚠ {importState.error}</p>}
             {importState?.ok && <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "#0f7a43", fontWeight: 600 }}>✓ {importState.ok}</p>}
           </form>
+          <p style={{ margin: "10px 2px 0", fontSize: 11.5, color: "#9aa4b2" }}>
+            A coluna <strong>Empresa</strong> é casada automaticamente com as empresas cadastradas.
+          </p>
         </div>
       </section>
 
       <section style={{ flex: "1.5 1 420px", minWidth: 320 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#6a7585" }}>{alunos.length} aluno(s)</span>
-          <button
-            type="button"
-            onClick={exportarCSV}
-            disabled={!alunos.length}
-            style={{
-              height: 34,
-              padding: "0 14px",
-              background: "#fff",
-              color: "#04377f",
-              border: "1.5px solid #cdd6e4",
-              borderRadius: 9,
-              fontSize: 12.5,
-              fontWeight: 700,
-              cursor: alunos.length ? "pointer" : "not-allowed",
-              opacity: alunos.length ? 1 : 0.5,
-            }}
-          >
-            Exportar CSV
-          </button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#6a7585" }}>{alunosFiltrados.length} aluno(s)</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {empresas.length > 0 && (
+              <select
+                className="pf365"
+                value={empresaFiltro}
+                onChange={(e) => setEmpresaFiltro(e.target.value)}
+                style={{ height: 34, padding: "0 10px", fontSize: 12.5, border: "1.5px solid #cdd6e4", borderRadius: 9, color: "#04377f", background: "#fff", fontWeight: 700 }}
+              >
+                <option value="">Todas as empresas</option>
+                {empresas.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nome}
+                  </option>
+                ))}
+                <option value="__none__">Sem empresa</option>
+              </select>
+            )}
+            <button
+              type="button"
+              onClick={exportarCSV}
+              disabled={!alunos.length}
+              style={{
+                height: 34,
+                padding: "0 14px",
+                background: "#fff",
+                color: "#04377f",
+                border: "1.5px solid #cdd6e4",
+                borderRadius: 9,
+                fontSize: 12.5,
+                fontWeight: 700,
+                cursor: alunos.length ? "pointer" : "not-allowed",
+                opacity: alunos.length ? 1 : 0.5,
+              }}
+            >
+              Exportar CSV
+            </button>
+          </div>
         </div>
 
-        {alunos.length === 0 ? (
+        {alunosFiltrados.length === 0 ? (
           <div style={{ background: "#fff", border: "1px dashed #cfd7e2", borderRadius: 14, padding: "48px 24px", textAlign: "center" }}>
-            <div style={{ fontSize: 14.5, fontWeight: 700, color: "#41506a" }}>Nenhum aluno cadastrado</div>
-            <p style={{ margin: "6px 0 0", fontSize: 13, color: "#8a94a3" }}>Use o formulário ao lado para começar.</p>
+            <div style={{ fontSize: 14.5, fontWeight: 700, color: "#41506a" }}>{alunos.length === 0 ? "Nenhum aluno cadastrado" : "Nenhum aluno nesta empresa"}</div>
+            <p style={{ margin: "6px 0 0", fontSize: 13, color: "#8a94a3" }}>{alunos.length === 0 ? "Use o formulário ao lado para começar." : "Selecione outra empresa no filtro."}</p>
           </div>
         ) : (
           <div style={{ background: "#fff", border: "1px solid #e6eaf1", borderRadius: 14, overflow: "hidden" }}>
-            {alunos.map((a) => (
+            {alunosFiltrados.map((a) => (
               <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid #f2f5f9" }}>
                 <div
                   style={{

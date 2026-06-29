@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, text, timestamp, boolean, uuid, jsonb } from "drizzle-orm/pg-core"
+import { pgTable, pgEnum, text, timestamp, boolean, uuid, jsonb, integer } from "drizzle-orm/pg-core"
 
 // Papéis de usuário do portal.
 export const roleEnum = pgEnum("role", ["super_admin", "distribuidor"])
@@ -15,12 +15,30 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
-// Alunos cadastrados por um distribuidor.
+// Empresas (clientes do distribuidor) que alinham convidados para os treinamentos.
+export const companies = pgTable("companies", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  distributorId: uuid("distributor_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  nome: text("nome").notNull(),
+  cidade: text("cidade").notNull().default(""),
+  responsavel: text("responsavel").notNull().default(""),
+  telefone: text("telefone").notNull().default(""),
+  email: text("email").notNull().default(""),
+  convidadosPrevistos: integer("convidados_previstos").notNull().default(0),
+  observacoes: text("observacoes").notNull().default(""),
+  ativo: boolean("ativo").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Alunos cadastrados por um distribuidor (opcionalmente vinculados a uma empresa).
 export const students = pgTable("students", {
   id: uuid("id").defaultRandom().primaryKey(),
   distributorId: uuid("distributor_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  companyId: uuid("company_id").references(() => companies.id, { onDelete: "set null" }),
   nome: text("nome").notNull(),
   email: text("email").notNull().default(""),
   telefone: text("telefone").notNull().default(""),
@@ -115,6 +133,7 @@ export const rsvps = pgTable("rsvps", {
 })
 
 export type User = typeof users.$inferSelect
+export type Company = typeof companies.$inferSelect
 export type Student = typeof students.$inferSelect
 export type Certificate = typeof certificates.$inferSelect
 export type EmitLink = typeof emitLinks.$inferSelect

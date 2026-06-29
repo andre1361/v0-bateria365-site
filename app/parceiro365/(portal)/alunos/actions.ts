@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
-import { students } from "@/db/schema"
+import { students, companies } from "@/db/schema"
 import { requireUser } from "../../guard"
 
 export type StudentState = { error?: string; ok?: string }
@@ -11,6 +11,10 @@ export type StudentState = { error?: string; ok?: string }
 type Row = { nome: string; email: string; telefone: string; empresa: string }
 
 const DIACRITICS = new RegExp("[\\u0300-\\u036f]", "g")
+
+function normName(x: string) {
+  return (x || "").trim().toLowerCase().normalize("NFD").replace(DIACRITICS, "")
+}
 
 function parseTabela(texto: string): Row[] {
   const linhas = texto
@@ -78,14 +82,31 @@ export async function createStudent(_prev: StudentState, formData: FormData): Pr
   const u = await requireUser()
   const nome = String(formData.get("nome") || "").trim()
   if (!nome) return { error: "Informe o nome do aluno." }
+
+  const companyId = String(formData.get("companyId") || "")
+  let empresa = String(formData.get("empresa") || "").trim()
+  let linkedCompanyId: string | null = null
+  if (companyId) {
+    const [c] = await db
+      .select({ id: companies.id, nome: companies.nome })
+      .from(companies)
+      .where(and(eq(companies.id, companyId), eq(companies.distributorId, u.id)))
+    if (c) {
+      linkedCompanyId = c.id
+      empresa = c.nome
+    }
+  }
+
   await db.insert(students).values({
     distributorId: u.id,
+    companyId: linkedCompanyId,
     nome,
     email: String(formData.get("email") || "").trim(),
     telefone: String(formData.get("telefone") || "").trim(),
-    empresa: String(formData.get("empresa") || "").trim(),
+    empresa,
   })
   revalidatePath("/parceiro365/alunos")
+  revalidatePath("/parceiro365/empresas")
   return { ok: "Aluno cadastrado." }
 }
 
@@ -93,8 +114,29 @@ export async function importStudents(_prev: StudentState, formData: FormData): P
   const u = await requireUser()
   const rows = parseTabela(String(formData.get("lista") || ""))
   if (!rows.length) return { error: "Nenhum nome válido encontrado na lista." }
-  await db.insert(students).values(rows.map((r) => ({ distributorId: u.id, ...r })))
+
+  // Casa a coluna "empresa" com as empresas já cadastradas (por nome normalizado).
+  const comps = await db
+    .select({ id: companies.id, nome: companies.nome })
+    .from(companies)
+    .where(eq(companies.distributorId, u.id))
+  const byName = new Map(comps.map((c) => [normName(c.nome), c]))
+
+  await db.insert(students).values(
+    rows.map((r) => {
+      const match = r.empresa ? byName.get(normName(r.empresa)) : undefined
+      return {
+        distributorId: u.id,
+        companyId: match?.id ?? null,
+        nome: r.nome,
+        email: r.email,
+        telefone: r.telefone,
+        empresa: match ? match.nome : r.empresa,
+      }
+    }),
+  )
   revalidatePath("/parceiro365/alunos")
+  revalidatePath("/parceiro365/empresas")
   return { ok: `${rows.length} aluno(s) importado(s).` }
 }
 
