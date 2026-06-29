@@ -4,7 +4,8 @@ import type { NextAuthConfig } from "next-auth"
 // Os providers (Credentials) ficam em auth.ts (runtime Node).
 export const authConfig = {
   trustHost: true,
-  session: { strategy: "jwt" },
+  // Sessão longa (30 dias) para o usuário "entrar direto" nas próximas visitas.
+  session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 30 },
   pages: { signIn: "/parceiro365/login" },
   providers: [],
   callbacks: {
