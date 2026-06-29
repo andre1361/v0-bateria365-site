@@ -88,6 +88,24 @@ export async function assignSeller(formData: FormData): Promise<void> {
   revalidatePath("/parceiro365/empresas")
 }
 
+export async function updateSeller(formData: FormData): Promise<void> {
+  const u = await requireUser()
+  const id = String(formData.get("id") || "")
+  const nome = String(formData.get("nome") || "").trim()
+  if (!id || !nome) return
+  await db.update(sellers).set({ nome }).where(and(eq(sellers.id, id), eq(sellers.distributorId, u.id)))
+  revalidatePath("/parceiro365/empresas")
+}
+
+export async function deleteSeller(formData: FormData): Promise<void> {
+  const u = await requireUser()
+  const id = String(formData.get("id") || "")
+  if (!id) return
+  // FK companies.seller_id é ON DELETE set null — as empresas ficam sem vendedor.
+  await db.delete(sellers).where(and(eq(sellers.id, id), eq(sellers.distributorId, u.id)))
+  revalidatePath("/parceiro365/empresas")
+}
+
 export async function deleteCompany(formData: FormData): Promise<void> {
   const u = await requireUser()
   const id = String(formData.get("id") || "")

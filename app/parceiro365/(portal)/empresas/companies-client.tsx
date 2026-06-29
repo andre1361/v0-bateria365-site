@@ -1,7 +1,7 @@
 "use client"
 
 import { useActionState, useEffect, useState } from "react"
-import { saveCompany, deleteCompany, addStudentToCompany, removeStudent, assignSeller, type CompanyState } from "./actions"
+import { saveCompany, deleteCompany, addStudentToCompany, removeStudent, assignSeller, updateSeller, deleteSeller, type CompanyState } from "./actions"
 import { maskPhone } from "@/lib/phone"
 
 type Aluno = { id: string; nome: string; email: string; telefone: string }
@@ -195,6 +195,44 @@ export function CompaniesClient({ empresas, semEmpresa, sellers }: { empresas: E
           {state.error && <p style={{ margin: "12px 0 0", fontSize: 12.5, color: "#c0392b", fontWeight: 600 }}>⚠ {state.error}</p>}
           {state.ok && <p style={{ margin: "12px 0 0", fontSize: 12.5, color: "#0f7a43", fontWeight: 600 }}>✓ {state.ok}</p>}
         </form>
+
+        {sellers.length > 0 && (
+          <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px dashed #e2e4ea" }}>
+            <h3 style={{ margin: "0 0 10px", fontSize: 13.5, fontWeight: 800, color: "#41506a" }}>Vendedores cadastrados</h3>
+            <div style={{ border: "1px solid #eef1f5", borderRadius: 10, overflow: "hidden" }}>
+              {sellers.map((s) => (
+                <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 8px", borderBottom: "1px solid #f3f5f9" }}>
+                  <form action={updateSeller} style={{ display: "flex", flex: 1, minWidth: 0, gap: 6 }}>
+                    <input type="hidden" name="id" value={s.id} />
+                    <input
+                      name="nome"
+                      defaultValue={s.nome}
+                      className="pf365"
+                      style={{ flex: 1, minWidth: 0, height: 32, padding: "0 8px", fontSize: 12.5, border: "1.5px solid #dde3ec", borderRadius: 7, background: "#fff", color: "#1f2733" }}
+                    />
+                    <button type="submit" title="Salvar nome" style={{ height: 32, padding: "0 10px", background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      Salvar
+                    </button>
+                  </form>
+                  <form action={deleteSeller}>
+                    <input type="hidden" name="id" value={s.id} />
+                    <button
+                      type="submit"
+                      title="Excluir vendedor"
+                      onClick={(ev) => {
+                        if (!confirm(`Excluir o vendedor "${s.nome}"? As empresas atendidas por ele ficarão sem vendedor.`)) ev.preventDefault()
+                      }}
+                      style={{ height: 32, width: 32, background: "#fff", color: "#c0392b", border: "1.5px solid #ecdcd9", borderRadius: 7, fontSize: 13, cursor: "pointer" }}
+                    >
+                      ×
+                    </button>
+                  </form>
+                </div>
+              ))}
+            </div>
+            <p style={{ margin: "8px 2px 0", fontSize: 11.5, color: "#9aa4b2" }}>Edite o nome e clique em Salvar, ou remova com ×.</p>
+          </div>
+        )}
       </section>
 
       {/* Lista de empresas */}
