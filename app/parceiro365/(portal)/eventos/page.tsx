@@ -28,7 +28,7 @@ export default async function EventosPage() {
     slug: e.slug,
     confirmados: allRsvps
       .filter((r) => r.eventId === e.id)
-      .map((r) => ({ id: r.id, nome: r.nome, telefone: r.telefone })),
+      .map((r) => ({ id: r.id, nome: r.nome, telefone: r.telefone, email: r.email, empresa: r.empresa })),
   }))
 
   return (

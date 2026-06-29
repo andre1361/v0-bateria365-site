@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from "react"
 import { saveEvent, deleteEvent, type EventState } from "./actions"
 
-type Confirmado = { id: string; nome: string; telefone: string }
+type Confirmado = { id: string; nome: string; telefone: string; email: string; empresa: string }
 type Evento = {
   id: string
   titulo: string
@@ -73,7 +73,11 @@ export function EventsClient({ eventos }: { eventos: Evento[] }) {
 
   const exportarCSV = (ev: Evento) => {
     const esc = (v: string) => '"' + String(v || "").replace(/"/g, '""') + '"'
-    const csv = "﻿" + [["Nome", "WhatsApp"], ...ev.confirmados.map((c) => [c.nome, c.telefone])].map((r) => r.map(esc).join(",")).join("\n")
+    const csv =
+      "﻿" +
+      [["Nome", "WhatsApp", "E-mail", "Empresa"], ...ev.confirmados.map((c) => [c.nome, c.telefone, c.email, c.empresa])]
+        .map((r) => r.map(esc).join(","))
+        .join("\n")
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }))
     const a = document.createElement("a")
     a.href = url
@@ -182,9 +186,15 @@ export function EventsClient({ eventos }: { eventos: Evento[] }) {
                     <p style={{ margin: 0, fontSize: 12.5, color: "#8a94a3" }}>Ninguém confirmou ainda.</p>
                   ) : (
                     ev.confirmados.map((c) => (
-                      <div key={c.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "6px 0", fontSize: 13, borderBottom: "1px solid #f3f5f9" }}>
-                        <span style={{ fontWeight: 600, color: "#1f2733" }}>{c.nome}</span>
-                        <span style={{ color: "#6a7585" }}>{c.telefone}</span>
+                      <div key={c.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "8px 0", fontSize: 13, borderBottom: "1px solid #f3f5f9" }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, color: "#1f2733" }}>{c.nome}</div>
+                          {c.empresa && <div style={{ fontSize: 12, color: "#8a94a3" }}>{c.empresa}</div>}
+                        </div>
+                        <div style={{ textAlign: "right", minWidth: 0 }}>
+                          <div style={{ color: "#6a7585" }}>{c.telefone}</div>
+                          {c.email && <div style={{ fontSize: 12, color: "#8a94a3", overflow: "hidden", textOverflow: "ellipsis" }}>{c.email}</div>}
+                        </div>
                       </div>
                     ))
                   )}

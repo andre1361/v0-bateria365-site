@@ -109,6 +109,8 @@ export const rsvps = pgTable("rsvps", {
     .references(() => events.id, { onDelete: "cascade" }),
   nome: text("nome").notNull(),
   telefone: text("telefone").notNull().default(""),
+  email: text("email").notNull().default(""),
+  empresa: text("empresa").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
