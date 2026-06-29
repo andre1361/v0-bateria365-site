@@ -41,20 +41,38 @@ function parseLote(text: string, data: string): Row[] {
     .filter((r) => r.nome)
 }
 
+function dedupeByNome(rows: Row[]): Row[] {
+  const seen = new Set<string>()
+  const out: Row[] = []
+  for (const r of rows) {
+    const k = r.nome.trim().toLowerCase()
+    if (!k || seen.has(k)) continue
+    seen.add(k)
+    out.push(r)
+  }
+  return out
+}
+
+type Aluno = { id: string; nome: string; empresa: string }
+
 export function CertificatesClient({
   distribuidor,
   cidade,
   slug,
+  alunos,
 }: {
   distribuidor: string
   cidade: string
   slug: string | null
+  alunos: Aluno[]
 }) {
   const [tab, setTab] = useState<Tab>("ind")
   const [nome, setNome] = useState("")
   const [empresa, setEmpresa] = useState("")
   const [data, setData] = useState("")
   const [loteText, setLoteText] = useState("")
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [busca, setBusca] = useState("")
   const [printRows, setPrintRows] = useState<Row[]>([])
   const [origin, setOrigin] = useState("")
   const [linkState, linkAction, savingLink] = useActionState(saveEmitLink, linkInitial)
@@ -68,7 +86,13 @@ export function CertificatesClient({
   const currentSlug = linkState.slug || slug
   const emitUrl = currentSlug ? `${origin}/parceiro365/emitir/${currentSlug}` : ""
   const extenso = dataExtenso(data)
-  const loteRows = parseLote(loteText, data)
+  const selecionados = alunos
+    .filter((a) => selectedIds.includes(a.id))
+    .map((a) => ({ nome: a.nome, empresa: a.empresa, data }))
+  const loteRows = dedupeByNome([...selecionados, ...parseLote(loteText, data)])
+  const alunosFiltrados = busca.trim()
+    ? alunos.filter((a) => a.nome.toLowerCase().includes(busca.trim().toLowerCase()))
+    : alunos
 
   const imprimir = (rows: Row[]) => {
     if (!rows.length) return
@@ -112,6 +136,30 @@ export function CertificatesClient({
         <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
           <section style={{ flex: "1 1 300px", maxWidth: 360, background: "#fff", border: "1px solid #e6eaf1", borderRadius: 16, padding: 22 }}>
             <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 800 }}>Dados do certificado</h2>
+            {alunos.length > 0 && (
+              <>
+                <label style={label}>Aluno cadastrado</label>
+                <select
+                  className="pf365"
+                  value=""
+                  onChange={(e) => {
+                    const a = alunos.find((x) => x.id === e.target.value)
+                    if (a) {
+                      setNome(a.nome)
+                      setEmpresa(a.empresa)
+                    }
+                  }}
+                  style={{ ...field, padding: "0 10px" }}
+                >
+                  <option value="">— selecionar aluno cadastrado —</option>
+                  {alunos.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.nome}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
             <label style={label}>
               Nome do aluno <span style={{ color: "#d6442f" }}>*</span>
             </label>
@@ -164,6 +212,48 @@ export function CertificatesClient({
             </p>
             <label style={label}>Data do treinamento</label>
             <input className="pf365" type="date" value={data} onChange={(e) => setData(e.target.value)} style={field} />
+
+            {alunos.length > 0 && (
+              <div style={{ marginBottom: 14 }}>
+                <label style={label}>Alunos cadastrados</label>
+                <input className="pf365" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar aluno…" style={{ ...field, marginBottom: 8 }} />
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                  <button type="button" onClick={() => setSelectedIds(alunosFiltrados.map((a) => a.id))} style={{ flex: 1, height: 32, background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    Selecionar todos
+                  </button>
+                  <button type="button" onClick={() => setSelectedIds([])} style={{ flex: "none", height: 32, padding: "0 12px", background: "#fff", color: "#6a7585", border: "1.5px solid #dde3ec", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    Limpar
+                  </button>
+                </div>
+                <div style={{ maxHeight: 170, overflow: "auto", border: "1px solid #eef1f5", borderRadius: 10 }}>
+                  {alunosFiltrados.length === 0 ? (
+                    <div style={{ padding: "16px", fontSize: 12.5, color: "#8a94a3", textAlign: "center" }}>Nenhum aluno encontrado.</div>
+                  ) : (
+                    alunosFiltrados.map((a) => (
+                      <label key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", fontSize: 13, borderBottom: "1px solid #f3f5f9", cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(a.id)}
+                          onChange={(e) => setSelectedIds((prev) => (e.target.checked ? [...prev, a.id] : prev.filter((x) => x !== a.id)))}
+                          style={{ width: 15, height: 15, accentColor: "#04377f", flex: "none" }}
+                        />
+                        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {a.nome}
+                          {a.empresa ? ` · ${a.empresa}` : ""}
+                        </span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: "#8a94a3", marginTop: 6 }}>{selectedIds.length} selecionado(s)</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0 2px" }}>
+                  <div style={{ flex: 1, height: 1, background: "#eef1f5" }} />
+                  <span style={{ fontSize: 11, color: "#9aa4b2", fontWeight: 600 }}>OU COLE UMA LISTA</span>
+                  <div style={{ flex: 1, height: 1, background: "#eef1f5" }} />
+                </div>
+              </div>
+            )}
+
             <textarea
               className="pf365"
               value={loteText}
@@ -198,7 +288,7 @@ export function CertificatesClient({
             </div>
             <div style={{ background: "#fff", border: "1px solid #e6eaf1", borderRadius: 14, overflow: "hidden", maxHeight: 360, overflowY: "auto" }}>
               {loteRows.length === 0 ? (
-                <div style={{ padding: "40px 24px", textAlign: "center", color: "#8a94a3", fontSize: 13 }}>Cole a lista ao lado.</div>
+                <div style={{ padding: "40px 24px", textAlign: "center", color: "#8a94a3", fontSize: 13 }}>Selecione alunos cadastrados ou cole uma lista ao lado.</div>
               ) : (
                 loteRows.map((r, i) => (
                   <div key={i} style={{ display: "grid", gridTemplateColumns: "24px 1fr 1.2fr", gap: 8, alignItems: "center", padding: "9px 18px", borderBottom: "1px solid #f3f5f9", fontSize: 12.5 }}>
