@@ -1,12 +1,31 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useEffect, useState } from "react"
 import { loginAction, type LoginState } from "./actions"
 
 const initial: LoginState = {}
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, initial)
+  const [email, setEmail] = useState("")
+  const [remember, setRemember] = useState(true)
+
+  // Lembrar o e-mail neste computador (a senha fica a cargo do gerenciador do navegador).
+  useEffect(() => {
+    try {
+      const rem = localStorage.getItem("pf365_remember") !== "0"
+      setRemember(rem)
+      if (rem) setEmail(localStorage.getItem("pf365_email") || "")
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("pf365_remember", remember ? "1" : "0")
+      if (remember && email) localStorage.setItem("pf365_email", email)
+      if (!remember) localStorage.removeItem("pf365_email")
+    } catch {}
+  }, [email, remember])
 
   return (
     <div
@@ -106,6 +125,8 @@ export function LoginForm() {
               type="email"
               required
               autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="voce@distribuidor.com"
               className="pf365"
               style={{
@@ -139,6 +160,17 @@ export function LoginForm() {
                 color: "#1f2733",
               }}
             />
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, fontSize: 13, color: "#41506a", cursor: "pointer", userSelect: "none" }}>
+              <input
+                type="checkbox"
+                name="remember"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: "#04377f" }}
+              />
+              Lembrar de mim neste computador
+            </label>
 
             {state?.error && (
               <div style={{ marginTop: 10, fontSize: 12.5, color: "#c0392b", fontWeight: 600 }}>⚠ {state.error}</div>
