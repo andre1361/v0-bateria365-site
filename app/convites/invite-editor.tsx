@@ -15,7 +15,7 @@ type Offsets = {
   logoY: number
 }
 
-type EditorState = {
+export type EditorState = {
   template: Template
   cidade: string
   dataISO: string
@@ -106,8 +106,30 @@ function fmtOff(n: number): string {
   return (v > 0 ? "+" : "") + v + " px"
 }
 
-export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormData) => void | Promise<void> }) {
-  const [state, setState] = useState<EditorState>(INITIAL_STATE)
+export type InviteMeta = {
+  template: string
+  cidade: string
+  data: string
+  horario: string
+  distribuidor: string
+  local: string
+}
+
+export function InviteEditor({
+  headerRight,
+  onGenerated,
+  embedded,
+  initial,
+}: {
+  headerRight?: React.ReactNode
+  onGenerated?: (meta: InviteMeta) => void
+  // embedded=true: preenche a altura do container (uso dentro do portal),
+  // em vez de ocupar a tela inteira (100vh).
+  embedded?: boolean
+  // Valores iniciais (ex.: auto-preenchidos a partir de um evento).
+  initial?: Partial<EditorState>
+}) {
+  const [state, setState] = useState<EditorState>({ ...INITIAL_STATE, ...(initial || {}) })
   const stageRef = useRef<HTMLDivElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
   const measureCtxRef = useRef<CanvasRenderingContext2D | null>(null)
@@ -266,6 +288,14 @@ export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormD
       document.body.appendChild(a)
       a.click()
       a.remove()
+      onGenerated?.({
+        template: state.template,
+        cidade: state.cidade,
+        data: fmtDate(state.dataISO),
+        horario: state.horario,
+        distribuidor: state.distribuidor,
+        local: state.local,
+      })
     } catch (e) {
       console.error("Falha ao gerar PNG:", e)
     } finally {
@@ -276,7 +306,17 @@ export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormD
       setState((s) => ({ ...s, downloading: false }))
       fitPreview()
     }
-  }, [state.downloading, state.template, state.cidade, fitPreview])
+  }, [
+    state.downloading,
+    state.template,
+    state.cidade,
+    state.dataISO,
+    state.horario,
+    state.distribuidor,
+    state.local,
+    onGenerated,
+    fitPreview,
+  ])
 
   const isSquare = state.template === "square"
   const off = state.offsets
@@ -310,7 +350,7 @@ export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormD
     <div
       style={{
         display: "flex",
-        height: "100vh",
+        height: embedded ? "100%" : "100vh",
         width: "100%",
         fontFamily: "var(--font-lato), -apple-system, 'Segoe UI', Roboto, sans-serif",
         background: "#f4f5f7",
@@ -372,26 +412,7 @@ export function InviteEditor({ logoutAction }: { logoutAction?: (formData: FormD
                 Bateria 365 · Distribuidor
               </span>
             </div>
-            {logoutAction && (
-              <form action={logoutAction}>
-                <button
-                  type="submit"
-                  title="Encerrar sessão"
-                  style={{
-                    fontFamily: "inherit",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: "#8a90a0",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    padding: 0,
-                  }}
-                >
-                  Sair
-                </button>
-              </form>
-            )}
+            {headerRight}
           </div>
           <h1 style={{ margin: 0, fontSize: 25, fontWeight: 900, letterSpacing: "-0.01em", color: "#081344" }}>
             Editor de Convites
