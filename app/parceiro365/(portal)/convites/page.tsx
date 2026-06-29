@@ -20,7 +20,7 @@ export default async function ConvitesModulePage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <PageHeader title="Convites" subtitle="Geração de convites" />
+      <PageHeader title="Imagem do convite" subtitle="Crie a arte para divulgar o treinamento" />
       <div style={{ flex: 1, minHeight: 0 }}>
         <InvitesClient eventos={eventos} distribuidorNome={u.nome} />
       </div>

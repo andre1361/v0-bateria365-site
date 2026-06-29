@@ -1,13 +1,15 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { randomUUID } from "crypto"
 import bcrypt from "bcryptjs"
 import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
-import { users } from "@/db/schema"
+import { users, events } from "@/db/schema"
 import { requireAdmin } from "../../guard"
 
 export type AdminState = { error?: string; ok?: string }
+export type EventAdminState = { error?: string; ok?: string }
 
 export async function createDistributor(_prev: AdminState, formData: FormData): Promise<AdminState> {
   await requireAdmin()
@@ -49,4 +51,66 @@ export async function deleteDistributor(formData: FormData): Promise<void> {
   if (!id) return
   await db.delete(users).where(and(eq(users.id, id), eq(users.role, "distribuidor")))
   revalidatePath("/parceiro365/admin")
+}
+
+// --- Treinamentos (eventos) criados pelo Super Admin e vinculados a um distribuidor ---
+
+function slugify(s: string) {
+  return (s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(new RegExp("[\\u0300-\\u036f]", "g"), "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+}
+
+function readEventFields(formData: FormData) {
+  return {
+    titulo: String(formData.get("titulo") || "").trim(),
+    modulo: String(formData.get("modulo") || "").trim(),
+    dataISO: String(formData.get("dataISO") || "").trim(),
+    horario: String(formData.get("horario") || "").trim(),
+    cidade: String(formData.get("cidade") || "").trim(),
+    local: String(formData.get("local") || "").trim(),
+    responsavel: String(formData.get("responsavel") || "").trim(),
+    instagram: String(formData.get("instagram") || "")
+      .trim()
+      .replace(/^@+/, ""),
+    template: String(formData.get("template") || "square") === "vertical" ? "vertical" : "square",
+  }
+}
+
+export async function saveEventForDistributor(_prev: EventAdminState, formData: FormData): Promise<EventAdminState> {
+  await requireAdmin()
+  const distributorId = String(formData.get("distributorId") || "")
+  if (!distributorId) return { error: "Distribuidor inválido." }
+  const [d] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, distributorId), eq(users.role, "distribuidor")))
+  if (!d) return { error: "Distribuidor não encontrado." }
+
+  const f = readEventFields(formData)
+  if (!f.titulo) return { error: "Informe o título do treinamento." }
+
+  const id = String(formData.get("id") || "")
+  if (id) {
+    await db.update(events).set(f).where(and(eq(events.id, id), eq(events.distributorId, distributorId)))
+    revalidatePath(`/parceiro365/admin/${distributorId}`)
+    return { ok: "Treinamento atualizado." }
+  }
+
+  const slug = (slugify(`${f.cidade}-${f.titulo}`) || "treino") + "-" + randomUUID().replace(/-/g, "").slice(0, 6)
+  await db.insert(events).values({ ...f, distributorId, slug })
+  revalidatePath(`/parceiro365/admin/${distributorId}`)
+  return { ok: "Treinamento criado." }
+}
+
+export async function deleteEventForDistributor(formData: FormData): Promise<void> {
+  await requireAdmin()
+  const id = String(formData.get("id") || "")
+  const distributorId = String(formData.get("distributorId") || "")
+  if (!id || !distributorId) return
+  await db.delete(events).where(and(eq(events.id, id), eq(events.distributorId, distributorId)))
+  revalidatePath(`/parceiro365/admin/${distributorId}`)
 }

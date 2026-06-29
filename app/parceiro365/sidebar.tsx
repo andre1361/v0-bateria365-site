@@ -21,11 +21,11 @@ export function Sidebar({
 
   const items: Item[] = [
     { href: "/parceiro365", label: "Visão geral", icon: LayoutGrid, exact: true },
-    { href: "/parceiro365/alunos", label: "Alunos", icon: Users },
+    { href: "/parceiro365/eventos", label: "Treinamentos", icon: CalendarDays },
     { href: "/parceiro365/empresas", label: "Empresas", icon: Store },
+    { href: "/parceiro365/alunos", label: "Alunos", icon: Users },
     { href: "/parceiro365/certificados", label: "Certificados", icon: Award },
-    { href: "/parceiro365/convites", label: "Convites", icon: Mail },
-    { href: "/parceiro365/eventos", label: "Eventos", icon: CalendarDays },
+    { href: "/parceiro365/convites", label: "Arte do convite", icon: Mail },
     { href: "/parceiro365/sorteios", label: "Sorteios", icon: Gift },
   ]
   if (role === "super_admin") {

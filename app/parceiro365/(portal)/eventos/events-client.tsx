@@ -50,7 +50,7 @@ const field: React.CSSProperties = {
 }
 const label: React.CSSProperties = { display: "block", fontSize: 12, fontWeight: 700, color: "#41506a", marginBottom: 5 }
 
-export function EventsClient({ eventos, empresas }: { eventos: Evento[]; empresas: { id: string; nome: string }[] }) {
+export function EventsClient({ eventos, empresas, canEdit = true }: { eventos: Evento[]; empresas: { id: string; nome: string }[]; canEdit?: boolean }) {
   const [state, action, saving] = useActionState(saveEvent, initial)
   const [form, setForm] = useState<Form>(EMPTY)
   const [expandido, setExpandido] = useState<string | null>(null)
@@ -98,9 +98,10 @@ export function EventsClient({ eventos, empresas }: { eventos: Evento[]; empresa
 
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start", maxWidth: 1180 }}>
-      {/* form */}
+      {/* form (só admin cria treinamentos; distribuidor recebe pronto) */}
+      {canEdit && (
       <section style={{ flex: "1 1 320px", maxWidth: 380, background: "#fff", border: "1px solid #e6eaf1", borderRadius: 16, padding: 22 }}>
-        <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 800 }}>{form.id ? "Editar evento" : "Novo evento"}</h2>
+        <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 800 }}>{form.id ? "Editar treinamento" : "Novo treinamento"}</h2>
         <form action={action}>
           <input type="hidden" name="id" value={form.id} />
           <label style={label}>Título <span style={{ color: "#d6442f" }}>*</span></label>
@@ -145,14 +146,17 @@ export function EventsClient({ eventos, empresas }: { eventos: Evento[]; empresa
           {state.ok && <p style={{ margin: "12px 0 0", fontSize: 12.5, color: "#0f7a43", fontWeight: 600 }}>✓ {state.ok}</p>}
         </form>
       </section>
+      )}
 
       {/* list */}
       <section style={{ flex: "1.5 1 460px", minWidth: 320, display: "flex", flexDirection: "column", gap: 14 }}>
         {eventos.length === 0 ? (
           <div style={{ background: "#fff", border: "1px dashed #cfd7e2", borderRadius: 16, padding: "52px 24px", textAlign: "center" }}>
             <div style={{ fontSize: 28, marginBottom: 8 }}>📅</div>
-            <div style={{ fontSize: 14.5, fontWeight: 700, color: "#41506a" }}>Nenhum evento criado</div>
-            <p style={{ margin: "7px 0 0", fontSize: 12.5, color: "#8a94a3" }}>Crie um evento para gerar o link de convite com confirmação.</p>
+            <div style={{ fontSize: 14.5, fontWeight: 700, color: "#41506a" }}>{canEdit ? "Nenhum treinamento criado" : "Nenhum treinamento ainda"}</div>
+            <p style={{ margin: "7px 0 0", fontSize: 12.5, color: "#8a94a3" }}>
+              {canEdit ? "Crie um treinamento para gerar o convite com confirmação." : "Seus treinamentos aparecem aqui assim que forem criados para você."}
+            </p>
           </div>
         ) : (
           eventos.map((ev) => (
@@ -164,13 +168,17 @@ export function EventsClient({ eventos, empresas }: { eventos: Evento[]; empresa
                     {[ev.cidade, ev.dataISO, ev.horario].filter(Boolean).join(" · ") || "Sem data definida"}
                   </div>
                 </div>
-                <button type="button" onClick={() => setForm({ id: ev.id, titulo: ev.titulo, modulo: ev.modulo, dataISO: ev.dataISO, horario: ev.horario, cidade: ev.cidade, local: ev.local, responsavel: ev.responsavel, instagram: ev.instagram, template: ev.template })} style={{ height: 30, padding: "0 12px", background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                  Editar
-                </button>
-                <form action={deleteEvent}>
-                  <input type="hidden" name="id" value={ev.id} />
-                  <button type="submit" title="Excluir" style={{ height: 30, width: 30, background: "#fff", color: "#c0392b", border: "1.5px solid #ecdcd9", borderRadius: 8, fontSize: 14, cursor: "pointer" }}>×</button>
-                </form>
+                {canEdit && (
+                  <>
+                    <button type="button" onClick={() => setForm({ id: ev.id, titulo: ev.titulo, modulo: ev.modulo, dataISO: ev.dataISO, horario: ev.horario, cidade: ev.cidade, local: ev.local, responsavel: ev.responsavel, instagram: ev.instagram, template: ev.template })} style={{ height: 30, padding: "0 12px", background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      Editar
+                    </button>
+                    <form action={deleteEvent}>
+                      <input type="hidden" name="id" value={ev.id} />
+                      <button type="submit" title="Excluir" style={{ height: 30, width: 30, background: "#fff", color: "#c0392b", border: "1.5px solid #ecdcd9", borderRadius: 8, fontSize: 14, cursor: "pointer" }}>×</button>
+                    </form>
+                  </>
+                )}
               </div>
 
               <div style={{ display: "flex", gap: 8, marginTop: 12, alignItems: "center" }}>

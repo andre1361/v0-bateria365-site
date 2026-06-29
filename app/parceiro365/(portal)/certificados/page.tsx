@@ -21,7 +21,7 @@ export default async function CertificadosPage() {
 
   return (
     <>
-      <PageHeader title="Certificados" subtitle="Emissão Bateria365" />
+      <PageHeader title="Certificados" subtitle="Entregue os certificados do treinamento" />
       <main style={{ flex: 1, padding: "26px 28px 56px" }}>
         <CertificatesClient distribuidor={u.nome} cidade={u.cidade} slug={link?.slug ?? null} alunos={alunoRows} empresas={empresas} />
       </main>

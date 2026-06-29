@@ -60,9 +60,9 @@ export default async function EventosPage() {
 
   return (
     <>
-      <PageHeader title="Eventos" subtitle="Convites com confirmação de presença" />
+      <PageHeader title="Treinamentos" subtitle="Convite, presença, sorteio e certificados" />
       <main style={{ flex: 1, padding: "26px 28px 56px" }}>
-        <EventsClient eventos={eventos} empresas={empresas} />
+        <EventsClient eventos={eventos} empresas={empresas} canEdit={false} />
       </main>
     </>
   )

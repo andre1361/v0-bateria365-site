@@ -1,6 +1,7 @@
 "use client"
 
 import { useActionState } from "react"
+import Link from "next/link"
 import { createDistributor, toggleDistributor, deleteDistributor, type AdminState } from "./actions"
 
 type Dist = { id: string; nome: string; email: string; cidade: string; ativo: boolean }
@@ -134,6 +135,12 @@ export function AdminClient({ distribuidores }: { distribuidores: Dist[] }) {
                     {[d.email, d.cidade].filter(Boolean).join(" · ")}
                   </div>
                 </div>
+                <Link
+                  href={`/parceiro365/admin/${d.id}`}
+                  style={{ height: 32, display: "inline-flex", alignItems: "center", padding: "0 12px", background: "#04377f", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none" }}
+                >
+                  Treinamentos
+                </Link>
                 <form action={toggleDistributor}>
                   <input type="hidden" name="id" value={d.id} />
                   <input type="hidden" name="ativo" value={String(d.ativo)} />

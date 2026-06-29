@@ -134,9 +134,9 @@ export function CertificatesClient({
       <PrintStyles />
 
       <div style={{ display: "inline-flex", gap: 4, background: "#e7ecf3", padding: 4, borderRadius: 11, marginBottom: 22 }}>
-        {tabBtn("ind", "Individual")}
-        {tabBtn("lote", "Em lote")}
-        {tabBtn("link", "Link com senha")}
+        {tabBtn("ind", "Um de cada vez")}
+        {tabBtn("lote", "Vários de uma vez")}
+        {tabBtn("link", "A pessoa baixa sozinha")}
       </div>
 
       {tab === "ind" && (
@@ -328,7 +328,7 @@ export function CertificatesClient({
 
       {tab === "link" && (
         <div style={{ maxWidth: 620, background: "#fff", border: "1px solid #e6eaf1", borderRadius: 16, padding: 24 }}>
-          <h2 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 800 }}>Link de auto-emissão</h2>
+          <h2 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 800 }}>A pessoa baixa o certificado sozinha</h2>
           <p style={{ margin: "0 0 20px", fontSize: 13, color: "#6a7585" }}>
             Defina uma senha e compartilhe o link. O próprio aluno digita o nome e baixa o certificado.
           </p>
