@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useActionState, useEffect, useState } from "react"
 import Link from "next/link"
-import { Mail, Users, Gift, Award, MapPin, CalendarDays, BookOpen, Instagram, Copy, ExternalLink, Building2 } from "lucide-react"
+import { Mail, Users, Gift, Award, MapPin, CalendarDays, BookOpen, Instagram, Copy, ExternalLink, Building2, Pencil } from "lucide-react"
+import { updateTrainingBasics } from "./actions"
 
 type Confirmado = { id: string; nome: string; telefone: string; email: string; empresa: string }
 type GrupoEmpresa = { empresa: string; count: number; meta: number }
@@ -54,6 +55,8 @@ const primaryBtn: React.CSSProperties = {
   textDecoration: "none",
   cursor: "pointer",
 }
+const editLabel: React.CSSProperties = { display: "block", fontSize: 11.5, fontWeight: 700, color: "#41506a", marginBottom: 5 }
+const editField: React.CSSProperties = { width: "100%", height: 40, padding: "0 12px", fontSize: 14, border: "1.5px solid #dde3ec", borderRadius: 10, marginBottom: 12, color: "#1f2733", background: "#fff" }
 
 export function TrainingHub({
   ev,
@@ -70,7 +73,12 @@ export function TrainingHub({
 }) {
   const [origin, setOrigin] = useState("")
   const [copiado, setCopiado] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [editState, editAction, savingEdit] = useActionState(updateTrainingBasics, {})
   useEffect(() => setOrigin(window.location.origin), [])
+  useEffect(() => {
+    if (editState.ok) setEditing(false)
+  }, [editState])
 
   const total = confirmados.length
   const linkEmpresa = (companyId: string) => `${origin}/parceiro365/convite/${ev.slug}/equipe/${companyId}`
@@ -117,16 +125,53 @@ export function TrainingHub({
     <div style={{ maxWidth: 760, display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Dados do treino + trilha de passos */}
       <div style={card}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-          {detalhe.map((d, i) => {
-            const Icon = d.icon
-            return (
-              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 12px", background: "#f4f7fb", borderRadius: 999, fontSize: 13, fontWeight: 600, color: "#41506a" }}>
-                <Icon size={15} color="#04377f" /> {d.txt}
-              </span>
-            )
-          })}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+            {detalhe.map((d, i) => {
+              const Icon = d.icon
+              return (
+                <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "6px 12px", background: "#f4f7fb", borderRadius: 999, fontSize: 13, fontWeight: 600, color: "#41506a" }}>
+                  <Icon size={15} color="#04377f" /> {d.txt}
+                </span>
+              )
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => setEditing((v) => !v)}
+            style={{ flex: "none", height: 32, padding: "0 12px", background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
+          >
+            <Pencil size={13} /> {editing ? "Fechar" : "Editar data/local"}
+          </button>
         </div>
+
+        {editing && (
+          <form action={editAction} style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #eef1f5" }}>
+            <input type="hidden" name="id" value={ev.id} />
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 150px" }}>
+                <label style={editLabel}>Data</label>
+                <input name="dataISO" type="date" defaultValue={ev.dataISO} className="pf365" style={editField} />
+              </div>
+              <div style={{ flex: "1 1 120px" }}>
+                <label style={editLabel}>Horário</label>
+                <input name="horario" defaultValue={ev.horario} placeholder="19h" className="pf365" style={editField} />
+              </div>
+            </div>
+            <label style={editLabel}>Local (endereço)</label>
+            <textarea name="local" defaultValue={ev.local} rows={2} placeholder="Nome do espaço, rua, bairro" className="pf365" style={{ ...editField, height: 58, padding: "10px 12px", resize: "vertical" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 2 }}>
+              <button type="submit" disabled={savingEdit} style={{ height: 42, padding: "0 20px", background: "#04377f", color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: savingEdit ? "wait" : "pointer", opacity: savingEdit ? 0.75 : 1 }}>
+                {savingEdit ? "Salvando…" : "Salvar"}
+              </button>
+              <button type="button" onClick={() => setEditing(false)} style={{ height: 42, padding: "0 14px", background: "#fff", color: "#6a7585", border: "1.5px solid #dde3ec", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                Cancelar
+              </button>
+              {editState.error && <span style={{ fontSize: 12.5, color: "#c0392b", fontWeight: 600 }}>⚠ {editState.error}</span>}
+            </div>
+          </form>
+        )}
+
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
           {steps.map((s, i) => {
             const Icon = s.icon
