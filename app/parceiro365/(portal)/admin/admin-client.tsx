@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react"
 import Link from "next/link"
 import { createDistributor, toggleDistributor, deleteDistributor, getDistributorLogin, resetDistributorPassword, type AdminState } from "./actions"
 
-type Dist = { id: string; nome: string; email: string; cidade: string; ativo: boolean }
+type Dist = { id: string; nome: string; email: string; cidade: string; ativo: boolean; treinos: number }
 
 const initial: AdminState = {}
 
@@ -171,6 +171,17 @@ export function AdminClient({ distribuidores }: { distribuidores: Dist[] }) {
                   </div>
                   <div style={{ fontSize: 12, color: "#8a94a3" }}>
                     {[d.email, d.cidade].filter(Boolean).join(" · ")}
+                  </div>
+                  <div style={{ marginTop: 5 }}>
+                    {d.treinos > 0 ? (
+                      <span style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: "#0f7a43", background: "#eafaf0", padding: "2px 9px", borderRadius: 999 }}>
+                        🎓 {d.treinos} treinamento{d.treinos > 1 ? "s" : ""}
+                      </span>
+                    ) : (
+                      <span style={{ display: "inline-block", fontSize: 11, fontWeight: 700, color: "#9a6700", background: "#fff7ed", padding: "2px 9px", borderRadius: 999 }}>
+                        Sem treinamento
+                      </span>
+                    )}
                   </div>
                 </div>
                 <button
