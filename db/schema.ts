@@ -149,6 +149,22 @@ export const rsvps = pgTable("rsvps", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
+// Páginas de links públicas (estilo Linktree) criadas pelo super admin.
+export type LinkItem = { id: string; titulo: string; url: string; imagem: string }
+export type LinkTab = { id: string; nome: string; items: LinkItem[] }
+
+export const linkPages = pgTable("link_pages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  titulo: text("titulo").notNull(),
+  descricao: text("descricao").notNull().default(""),
+  slug: text("slug").notNull().unique(),
+  logoUrl: text("logo_url").notNull().default(""),
+  accent: text("accent").notNull().default(""),
+  tabs: jsonb("tabs").$type<LinkTab[]>().notNull().default([]),
+  ativo: boolean("ativo").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
 export type User = typeof users.$inferSelect
 export type Seller = typeof sellers.$inferSelect
 export type Company = typeof companies.$inferSelect
@@ -159,3 +175,4 @@ export type Invite = typeof invites.$inferSelect
 export type Raffle = typeof raffles.$inferSelect
 export type Event = typeof events.$inferSelect
 export type Rsvp = typeof rsvps.$inferSelect
+export type LinkPage = typeof linkPages.$inferSelect
