@@ -43,6 +43,13 @@
       "when": 1782773836319,
       "tag": "0005_heavy_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782843835034,
+      "tag": "0006_pale_silver_centurion",
+      "breakpoints": true
     }
   ]
 }
