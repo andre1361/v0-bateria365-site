@@ -50,7 +50,23 @@ function domainOf(url: string) {
 export function LinkHub({ data, embedded }: { data: LinkHubData; embedded?: boolean }) {
   const accent = (data.accent || "").trim() || "#04377f"
   const onAccent = readableOn(accent)
-  const tabs = (data.tabs || []).filter((t) => t && t.nome !== undefined)
+  const realTabs = (data.tabs || []).filter((t) => t && t.nome !== undefined)
+
+  // Aba fixa "Todos": junta os links de todas as abas (sem repetir), sempre em primeiro.
+  const allItems = (() => {
+    const seen = new Set<string>()
+    return realTabs
+      .flatMap((t) => t.items || [])
+      .filter((it) => {
+        if (!((it.titulo || "").trim() || (it.url || "").trim())) return false
+        const key = (it.url || "").trim().toLowerCase() || "t:" + (it.titulo || "").trim().toLowerCase()
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+  })()
+  const tabs = realTabs.length >= 2 ? [{ id: "__todos__", nome: "Todos", items: allItems }, ...realTabs] : realTabs
+
   const [active, setActive] = useState(0)
   const idx = active < tabs.length ? active : 0
   const items = (tabs[idx]?.items || []).filter((i) => (i.titulo || "").trim() || (i.url || "").trim())
