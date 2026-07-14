@@ -5,6 +5,7 @@ import Link from "next/link"
 import type { LinkTab } from "@/db/schema"
 import { saveLinkPage } from "../actions"
 import { LinkHub } from "@/app/l/link-hub"
+import { ImageUploadField } from "./image-upload-field"
 
 type PageData = { id: string; titulo: string; descricao: string; slug: string; logoUrl: string; accent: string; tabs: LinkTab[] }
 
@@ -170,7 +171,7 @@ export function BuilderClient({ page }: { page: PageData }) {
                 </div>
                 <input className="pf365" value={it.titulo} onChange={(e) => updItem(k, "titulo", e.target.value)} placeholder="Título (ex.: Instagram da loja)" style={{ ...mini, marginBottom: 8 }} />
                 <input className="pf365" value={it.url} onChange={(e) => updItem(k, "url", e.target.value)} placeholder="Link (https://…)" style={{ ...mini, marginBottom: 8 }} />
-                <input className="pf365" value={it.imagem} onChange={(e) => updItem(k, "imagem", e.target.value)} placeholder="Imagem/ícone (URL, opcional)" style={mini} />
+                <ImageUploadField value={it.imagem} onChange={(url) => updItem(k, "imagem", url)} />
               </div>
             ))
           )}
