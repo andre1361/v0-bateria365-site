@@ -161,8 +161,12 @@ export function LinkHub({ data, embedded }: { data: LinkHubData; embedded?: bool
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={it.imagem} alt="" style={{ width: 52, height: 52, flex: "none", borderRadius: 14, objectFit: "cover", background: "#eef4fc" }} />
                   ) : (
-                    <div style={{ width: 52, height: 52, flex: "none", borderRadius: 14, background: `linear-gradient(150deg, ${rgba(accent, 0.16)}, ${rgba(accent, 0.08)})`, color: accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, fontWeight: 800 }}>
-                      {iniciais(it.titulo) || "•"}
+                    <div style={{ width: 52, height: 52, flex: "none", borderRadius: 14, background: `linear-gradient(150deg, ${rgba(accent, 0.16)}, ${rgba(accent, 0.08)})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {/* Sem imagem → ícone de link (placeholder) */}
+                      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                      </svg>
                     </div>
                   )}
                   <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
