@@ -107,8 +107,10 @@ export function BuilderClient({ page }: { page: PageData }) {
           <input className="pf365" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Materiais do treinamento" style={{ ...field, marginBottom: 12 }} />
           <label style={label}>Descrição</label>
           <input className="pf365" value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Acesse os materiais abaixo" style={{ ...field, marginBottom: 12 }} />
-          <label style={label}>Logo (URL da imagem)</label>
-          <input className="pf365" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://…/logo.png" style={{ ...field, marginBottom: 12 }} />
+          <label style={label}>Logo (imagem)</label>
+          <div style={{ marginBottom: 12 }}>
+            <ImageUploadField value={logoUrl} onChange={setLogoUrl} placeholder="Cole a URL ou envie um arquivo" />
+          </div>
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: "0 0 92px" }}>
               <label style={label}>Cor</label>
