@@ -186,12 +186,12 @@ export function LinkHub({ data, embedded }: { data: LinkHubData; embedded?: bool
           )}
         </div>
 
-        {/* Rodapé */}
-        <div style={{ textAlign: "center", marginTop: 30 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11.5, fontWeight: 600, color: "#8892a3", padding: "6px 12px", background: "rgba(255,255,255,0.6)", borderRadius: 999 }}>
-            <span style={{ width: 16, height: 16, borderRadius: 5, background: "#f9b801", color: "#04377f", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 800 }}>365</span>
-            Feito com Bateria 365
-          </span>
+        {/* Rodapé — mensagem de agradecimento */}
+        <div style={{ textAlign: "center", marginTop: 34 }}>
+          <div style={{ width: 40, height: 3, borderRadius: 999, background: rgba(accent, 0.28), margin: "0 auto 14px" }} />
+          <p style={{ margin: 0, fontSize: 14.5, fontWeight: 600, color: "#5a6579", lineHeight: 1.5 }}>
+            Obrigado por participar do nosso treinamento.
+          </p>
         </div>
       </div>
     </div>
