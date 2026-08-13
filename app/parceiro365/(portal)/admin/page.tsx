@@ -4,6 +4,7 @@ import { users, events } from "@/db/schema"
 import { PageHeader } from "../../page-header"
 import { requireAdmin } from "../../guard"
 import { AdminClient } from "./admin-client"
+import { mouraDirectory } from "./moura-directory"
 
 export default async function AdminPage() {
   await requireAdmin()
@@ -24,7 +25,7 @@ export default async function AdminPage() {
     <>
       <PageHeader title="Distribuidores" subtitle="Cadastro e gestão de parceiros" />
       <main style={{ flex: 1, padding: "26px 28px 56px" }}>
-        <AdminClient distribuidores={distribuidores} />
+        <AdminClient distribuidores={distribuidores} directory={mouraDirectory} />
       </main>
     </>
   )
