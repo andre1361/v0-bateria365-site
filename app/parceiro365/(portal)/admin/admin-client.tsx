@@ -1,10 +1,14 @@
 "use client"
 
-import { useActionState, useEffect, useState } from "react"
+import { useActionState, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { createDistributor, toggleDistributor, deleteDistributor, getDistributorLogin, resetDistributorPassword, type AdminState } from "./actions"
 
 type Dist = { id: string; nome: string; email: string; cidade: string; ativo: boolean; treinos: number }
+// Tipo declarado localmente (o dado vem por prop do servidor — não importar o módulo server-only aqui).
+type MouraEntry = { id: string; regiao: string; uf: string; cidade: string; unidade: string; razaoSocial: string; tipo: string; responsavel: string; telefone: string; email: string }
+
+const norm = (s: string) => (s || "").toLowerCase().normalize("NFD").replace(new RegExp("[\\u0300-\\u036f]", "g"), "")
 
 const initial: AdminState = {}
 
@@ -27,12 +31,62 @@ const label: React.CSSProperties = {
   marginBottom: 6,
 }
 
-export function AdminClient({ distribuidores }: { distribuidores: Dist[] }) {
+export function AdminClient({ distribuidores, directory }: { distribuidores: Dist[]; directory: MouraEntry[] }) {
   const [state, action, pending] = useActionState(createDistributor, initial)
   const [origin, setOrigin] = useState("")
   const [busyId, setBusyId] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  // Campos controlados — para permitir o auto-preenchimento pela lista.
+  const [nome, setNome] = useState("")
+  const [email, setEmail] = useState("")
+  const [cidade, setCidade] = useState("")
+
+  // Seletor da Rede Moura.
+  const [q, setQ] = useState("")
+  const [open, setOpen] = useState(false)
+  const [picked, setPicked] = useState<MouraEntry | null>(null)
+  const pickerRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => setOrigin(window.location.origin), [])
+  // Limpa o formulário após um cadastro bem-sucedido.
+  useEffect(() => {
+    if (state?.ok) {
+      setNome("")
+      setEmail("")
+      setCidade("")
+      setPicked(null)
+      setQ("")
+    }
+  }, [state])
+  // Fecha o dropdown ao clicar fora.
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener("mousedown", onDown)
+    return () => document.removeEventListener("mousedown", onDown)
+  }, [])
+
+  const nq = norm(q.trim())
+  const matches = (nq ? directory.filter((e) => norm(`${e.unidade} ${e.razaoSocial} ${e.cidade} ${e.uf} ${e.regiao} ${e.responsavel}`).includes(nq)) : directory).slice(0, 40)
+
+  const selecionar = (e: MouraEntry) => {
+    setNome(e.razaoSocial || e.unidade)
+    setEmail(e.email)
+    setCidade(e.cidade)
+    setPicked(e)
+    setQ(`${e.unidade || e.razaoSocial} — ${e.cidade}/${e.uf}`)
+    setOpen(false)
+  }
+  const limparSelecao = () => {
+    setPicked(null)
+    setQ("")
+    setNome("")
+    setEmail("")
+    setCidade("")
+    setOpen(false)
+  }
 
   const enviarLogin = async (id: string) => {
     setBusyId(id)
@@ -90,18 +144,70 @@ export function AdminClient({ distribuidores }: { distribuidores: Dist[] }) {
       >
         <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 800 }}>Novo distribuidor</h2>
         <form action={action}>
+          {/* Seletor da Rede Moura — preenche os campos ou deixe em branco para um novo. */}
+          <div ref={pickerRef} style={{ position: "relative", marginBottom: 18 }}>
+            <label style={label}>
+              Preencher a partir da Rede Moura <span style={{ color: "#8a94a3", fontWeight: 600 }}>(opcional)</span>
+            </label>
+            <input
+              className="pf365"
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value)
+                setOpen(true)
+                if (picked) setPicked(null)
+              }}
+              onFocus={() => setOpen(true)}
+              placeholder="Buscar por unidade, cidade, UF, responsável…"
+              autoComplete="off"
+              style={{ ...field, marginBottom: 0, borderColor: picked ? "#04377f" : "#dde3ec" }}
+            />
+            {picked && (
+              <button
+                type="button"
+                onClick={limparSelecao}
+                title="Limpar seleção"
+                style={{ position: "absolute", right: 8, top: 31, height: 26, padding: "0 9px", background: "#eef2f8", border: "none", borderRadius: 7, color: "#41506a", fontSize: 11.5, fontWeight: 700, cursor: "pointer" }}
+              >
+                limpar ×
+              </button>
+            )}
+            {open && matches.length > 0 && (
+              <div style={{ position: "absolute", zIndex: 20, top: "100%", left: 0, right: 0, marginTop: 4, background: "#fff", border: "1px solid #dde3ec", borderRadius: 10, boxShadow: "0 16px 40px -12px rgba(16,33,60,.28)", maxHeight: 288, overflow: "auto" }}>
+                {matches.map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    onClick={() => selecionar(e)}
+                    style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 12px", background: "#fff", border: "none", borderBottom: "1px solid #f2f5f9", cursor: "pointer" }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#1f2733", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.unidade || e.razaoSocial}</div>
+                    <div style={{ fontSize: 11.5, color: "#8a94a3", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {[`${e.cidade}/${e.uf}`, e.regiao, e.responsavel || null, e.email ? null : "sem e-mail"].filter(Boolean).join(" · ")}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {open && nq && matches.length === 0 && (
+              <div style={{ position: "absolute", zIndex: 20, top: "100%", left: 0, right: 0, marginTop: 4, background: "#fff", border: "1px solid #dde3ec", borderRadius: 10, padding: "12px 14px", fontSize: 12.5, color: "#8a94a3" }}>
+                Nada encontrado — preencha os campos abaixo para cadastrar um novo.
+              </div>
+            )}
+          </div>
+
           <label style={label}>
             Nome <span style={{ color: "#d6442f" }}>*</span>
           </label>
-          <input className="pf365" name="nome" placeholder="Distribuidor Catarinense Moura" style={field} required />
+          <input className="pf365" name="nome" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Distribuidor Catarinense Moura" style={field} required />
 
           <label style={label}>
             E-mail <span style={{ color: "#d6442f" }}>*</span>
           </label>
-          <input className="pf365" name="email" type="email" placeholder="distribuidor@empresa.com" style={field} required />
+          <input className="pf365" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="distribuidor@empresa.com" style={field} required />
 
           <label style={label}>Cidade</label>
-          <input className="pf365" name="cidade" placeholder="Florianópolis" style={field} />
+          <input className="pf365" name="cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} placeholder="Florianópolis" style={field} />
 
           <p style={{ margin: "2px 0 18px", fontSize: 12, color: "#8a94a3", lineHeight: 1.5 }}>
             🔑 A senha é gerada automaticamente. Depois, use <strong style={{ color: "#41506a" }}>Enviar login</strong> para copiar o acesso e mandar pro distribuidor.
