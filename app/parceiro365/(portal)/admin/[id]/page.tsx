@@ -34,9 +34,9 @@ export default async function ManageDistributorPage({ params }: { params: Promis
 
   return (
     <>
-      <PageHeader title={d.nome} subtitle="Treinamentos do distribuidor" />
+      <PageHeader title={d.nome} subtitle="Dados e treinamentos do distribuidor" />
       <main style={{ flex: 1, padding: "26px 28px 56px" }}>
-        <ManageClient distribuidor={{ id: d.id, nome: d.nome, cidade: d.cidade }} treinos={treinos} />
+        <ManageClient distribuidor={{ id: d.id, nome: d.nome, cidade: d.cidade, email: d.email }} treinos={treinos} />
       </main>
     </>
   )

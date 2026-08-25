@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react"
 import Link from "next/link"
-import { saveEventForDistributor, deleteEventForDistributor, type EventAdminState } from "../actions"
+import { saveEventForDistributor, deleteEventForDistributor, updateDistributor, impersonateDistributor, type EventAdminState, type AdminState } from "../actions"
 
 type Treino = {
   id: string
@@ -41,9 +41,14 @@ function fmtDate(iso: string) {
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso || ""
 }
 
-export function ManageClient({ distribuidor, treinos }: { distribuidor: { id: string; nome: string; cidade: string }; treinos: Treino[] }) {
+export function ManageClient({ distribuidor, treinos }: { distribuidor: { id: string; nome: string; cidade: string; email: string }; treinos: Treino[] }) {
   const [state, action, saving] = useActionState(saveEventForDistributor, initial)
   const [form, setForm] = useState<Form>(EMPTY)
+
+  // Editar dados cadastrais do distribuidor.
+  const [infoState, infoAction, savingInfo] = useActionState(updateDistributor, {} as AdminState)
+  const [info, setInfo] = useState({ nome: distribuidor.nome, email: distribuidor.email || "", cidade: distribuidor.cidade || "" })
+  const setI = (k: "nome" | "email" | "cidade") => (e: React.ChangeEvent<HTMLInputElement>) => setInfo((v) => ({ ...v, [k]: e.target.value }))
 
   useEffect(() => {
     if (state.ok) setForm(EMPTY)
@@ -53,9 +58,48 @@ export function ManageClient({ distribuidor, treinos }: { distribuidor: { id: st
     setForm((f) => ({ ...f, [k]: e.target.value }))
 
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start", maxWidth: 1180 }}>
-      <section style={{ flex: "1 1 320px", maxWidth: 380, background: "#fff", border: "1px solid #e6eaf1", borderRadius: 16, padding: 22 }}>
-        <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 800 }}>{form.id ? "Editar treinamento" : "Novo treinamento"}</h2>
+    <div style={{ maxWidth: 1180 }}>
+      {/* Dados cadastrais do distribuidor + acessar conta */}
+      <section style={{ background: "#fff", border: "1px solid #e6eaf1", borderRadius: 16, padding: 22, marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800 }}>Dados do distribuidor</h2>
+          <form action={impersonateDistributor} style={{ marginLeft: "auto" }}>
+            <input type="hidden" name="id" value={distribuidor.id} />
+            <button type="submit" title="Entrar na conta deste distribuidor" style={{ height: 38, padding: "0 16px", background: "#04377f", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              👁 Acessar conta
+            </button>
+          </form>
+        </div>
+        <form action={infoAction} style={{ display: "flex", flexWrap: "wrap", gap: 14, alignItems: "flex-end" }}>
+          <input type="hidden" name="id" value={distribuidor.id} />
+          <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+            <label style={label}>
+              Nome <span style={{ color: "#d6442f" }}>*</span>
+            </label>
+            <input className="pf365" name="nome" value={info.nome} onChange={setI("nome")} style={{ ...field, marginBottom: 0 }} required />
+          </div>
+          <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+            <label style={label}>
+              E-mail <span style={{ color: "#d6442f" }}>*</span>
+            </label>
+            <input className="pf365" name="email" type="email" value={info.email} onChange={setI("email")} style={{ ...field, marginBottom: 0 }} required />
+          </div>
+          <div style={{ flex: "1 1 150px", minWidth: 0 }}>
+            <label style={label}>Cidade</label>
+            <input className="pf365" name="cidade" value={info.cidade} onChange={setI("cidade")} style={{ ...field, marginBottom: 0 }} />
+          </div>
+          <button type="submit" disabled={savingInfo} style={{ height: 42, padding: "0 20px", background: "#04377f", color: "#fff", border: "none", borderRadius: 10, fontSize: 13.5, fontWeight: 700, cursor: savingInfo ? "wait" : "pointer", opacity: savingInfo ? 0.75 : 1 }}>
+            {savingInfo ? "Salvando…" : "Salvar dados"}
+          </button>
+        </form>
+        {infoState?.error && <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "#c0392b", fontWeight: 600 }}>⚠ {infoState.error}</p>}
+        {infoState?.ok && <p style={{ margin: "10px 0 0", fontSize: 12.5, color: "#0f7a43", fontWeight: 600 }}>✓ {infoState.ok}</p>}
+      </section>
+
+      {/* Treinamentos: formulário + lista */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start" }}>
+        <section style={{ flex: "1 1 320px", maxWidth: 380, background: "#fff", border: "1px solid #e6eaf1", borderRadius: 16, padding: 22 }}>
+          <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 800 }}>{form.id ? "Editar treinamento" : "Novo treinamento"}</h2>
         <form action={action}>
           <input type="hidden" name="distributorId" value={distribuidor.id} />
           <input type="hidden" name="id" value={form.id} />
@@ -163,6 +207,7 @@ export function ManageClient({ distribuidor, treinos }: { distribuidor: { id: st
           ))
         )}
       </section>
+      </div>
     </div>
   )
 }
