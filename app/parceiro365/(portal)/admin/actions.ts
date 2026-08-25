@@ -1,12 +1,14 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 import { randomUUID, randomBytes } from "crypto"
 import bcrypt from "bcryptjs"
-import { and, eq } from "drizzle-orm"
+import { and, eq, ne } from "drizzle-orm"
 import { db } from "@/db"
 import { users, events } from "@/db/schema"
-import { requireAdmin } from "../../guard"
+import { requireAdmin, IMPERSONATION_COOKIE } from "../../guard"
 
 export type AdminState = { error?: string; ok?: string }
 export type EventAdminState = { error?: string; ok?: string }
@@ -51,6 +53,57 @@ export async function deleteDistributor(formData: FormData): Promise<void> {
   if (!id) return
   await db.delete(users).where(and(eq(users.id, id), eq(users.role, "distribuidor")))
   revalidatePath("/parceiro365/admin")
+}
+
+// Editar dados cadastrais do distribuidor (nome, e-mail, cidade).
+export async function updateDistributor(_prev: AdminState, formData: FormData): Promise<AdminState> {
+  await requireAdmin()
+  const id = String(formData.get("id") || "")
+  const nome = String(formData.get("nome") || "").trim()
+  const email = String(formData.get("email") || "")
+    .trim()
+    .toLowerCase()
+  const cidade = String(formData.get("cidade") || "").trim()
+
+  if (!id) return { error: "Distribuidor inválido." }
+  if (!nome || !email) return { error: "Informe nome e e-mail." }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "E-mail inválido." }
+
+  const [d] = await db.select({ id: users.id }).from(users).where(and(eq(users.id, id), eq(users.role, "distribuidor")))
+  if (!d) return { error: "Distribuidor não encontrado." }
+
+  const dup = await db.select({ id: users.id }).from(users).where(and(eq(users.email, email), ne(users.id, id)))
+  if (dup.length) return { error: "Já existe um usuário com esse e-mail." }
+
+  await db.update(users).set({ nome, email, cidade }).where(and(eq(users.id, id), eq(users.role, "distribuidor")))
+  revalidatePath("/parceiro365/admin")
+  revalidatePath(`/parceiro365/admin/${id}`)
+  return { ok: "Dados do distribuidor atualizados." }
+}
+
+// --- "Acessar a conta" de um distribuidor (impersonação pelo super admin) ---
+
+export async function impersonateDistributor(formData: FormData): Promise<void> {
+  await requireAdmin()
+  const id = String(formData.get("id") || "")
+  if (!id) return
+  const [d] = await db.select({ id: users.id }).from(users).where(and(eq(users.id, id), eq(users.role, "distribuidor")))
+  if (!d) return
+  ;(await cookies()).set(IMPERSONATION_COOKIE, id, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 8,
+  })
+  redirect("/parceiro365")
+}
+
+export async function stopImpersonating(): Promise<void> {
+  // Só faz sentido para o super admin; se não houver cookie é um no-op inofensivo.
+  await requireAdmin()
+  ;(await cookies()).delete(IMPERSONATION_COOKIE)
+  redirect("/parceiro365/admin")
 }
 
 // --- Treinamentos (eventos) criados pelo Super Admin e vinculados a um distribuidor ---

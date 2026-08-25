@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { createDistributor, toggleDistributor, deleteDistributor, getDistributorLogin, resetDistributorPassword, type AdminState } from "./actions"
+import { createDistributor, toggleDistributor, deleteDistributor, getDistributorLogin, resetDistributorPassword, impersonateDistributor, type AdminState } from "./actions"
 
 type Dist = { id: string; nome: string; email: string; cidade: string; ativo: boolean; treinos: number }
 // Tipo declarado localmente (o dado vem por prop do servidor — não importar o módulo server-only aqui).
@@ -263,7 +263,9 @@ export function AdminClient({ distribuidores, directory }: { distribuidores: Dis
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 12,
+                  gap: 8,
+                  rowGap: 8,
+                  flexWrap: "wrap",
                   padding: "12px 16px",
                   borderBottom: "1px solid #f2f5f9",
                 }}
@@ -290,6 +292,16 @@ export function AdminClient({ distribuidores, directory }: { distribuidores: Dis
                     )}
                   </div>
                 </div>
+                <form action={impersonateDistributor}>
+                  <input type="hidden" name="id" value={d.id} />
+                  <button
+                    type="submit"
+                    title="Entrar na conta deste distribuidor para ver e gerenciar o portal dele"
+                    style={{ height: 32, padding: "0 12px", background: "#04377f", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
+                  >
+                    Acessar conta
+                  </button>
+                </form>
                 <button
                   type="button"
                   onClick={() => enviarLogin(d.id)}
@@ -312,9 +324,10 @@ export function AdminClient({ distribuidores, directory }: { distribuidores: Dis
                 </button>
                 <Link
                   href={`/parceiro365/admin/${d.id}`}
-                  style={{ height: 32, display: "inline-flex", alignItems: "center", padding: "0 12px", background: "#04377f", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none" }}
+                  title="Editar dados e gerenciar treinamentos"
+                  style={{ height: 32, display: "inline-flex", alignItems: "center", padding: "0 12px", background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}
                 >
-                  Treinamentos
+                  Gerenciar
                 </Link>
                 <form action={toggleDistributor}>
                   <input type="hidden" name="id" value={d.id} />
