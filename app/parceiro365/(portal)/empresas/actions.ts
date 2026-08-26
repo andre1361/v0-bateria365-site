@@ -110,10 +110,13 @@ export async function deleteCompany(formData: FormData): Promise<void> {
   const u = await requireUser()
   const id = String(formData.get("id") || "")
   if (!id) return
-  // FK com onDelete: set null — os alunos permanecem (apenas desvinculados).
+  // Exclui os alunos desta empresa junto com a empresa (mesmo distribuidor),
+  // antes do FK zerar o vínculo — evita alunos "órfãos" no sorteio.
+  await db.delete(students).where(and(eq(students.companyId, id), eq(students.distributorId, u.id)))
   await db.delete(companies).where(and(eq(companies.id, id), eq(companies.distributorId, u.id)))
   revalidatePath("/parceiro365/empresas")
   revalidatePath("/parceiro365/alunos")
+  revalidatePath("/parceiro365/sorteios")
 }
 
 export async function addStudentToCompany(formData: FormData): Promise<void> {
