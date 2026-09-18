@@ -58,18 +58,33 @@ function iniciais(nome: string) {
     .join("")
 }
 
-export function CompaniesClient({ empresas, semEmpresa, sellers }: { empresas: Empresa[]; semEmpresa: number; sellers: Seller[] }) {
+export function CompaniesClient({ empresas, semEmpresa, sellers, evento }: { empresas: Empresa[]; semEmpresa: number; sellers: Seller[]; evento: { slug: string; titulo: string } | null }) {
   const [state, action, saving] = useActionState(saveCompany, initial)
   const [form, setForm] = useState<Form>(EMPTY)
   const [sellerNew, setSellerNew] = useState("")
   const [expandido, setExpandido] = useState<string | null>(null)
+  const [origin, setOrigin] = useState("")
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
+  useEffect(() => setOrigin(window.location.origin), [])
   useEffect(() => {
     if (state.ok) {
       setForm(EMPTY)
       setSellerNew("")
     }
   }, [state])
+
+  const copiarLink = async (companyId: string) => {
+    if (!evento) return
+    const url = `${origin}/parceiro365/convite/${evento.slug}/equipe/${companyId}`
+    try {
+      await navigator.clipboard?.writeText(url)
+      setCopiedId(companyId)
+      setTimeout(() => setCopiedId((c) => (c === companyId ? null : c)), 2200)
+    } catch {
+      window.prompt("Copie o link do convite desta empresa:", url)
+    }
+  }
 
   const set = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -260,7 +275,7 @@ export function CompaniesClient({ empresas, semEmpresa, sellers }: { empresas: E
             const contato = [e.responsavel, e.telefone, e.email].filter(Boolean).join(" · ")
             return (
               <div key={e.id} style={{ background: "#fff", border: "1px solid #e6eaf1", borderRadius: 16, padding: 18 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, rowGap: 8, flexWrap: "wrap" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 800, color: "#1f2733" }}>
                       {e.nome}
@@ -268,6 +283,15 @@ export function CompaniesClient({ empresas, semEmpresa, sellers }: { empresas: E
                     </div>
                     {contato && <div style={{ fontSize: 12.5, color: "#8a94a3", marginTop: 2 }}>{contato}</div>}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => copiarLink(e.id)}
+                    disabled={!evento}
+                    title={evento ? "Copiar o link de convite desta empresa para enviar pra ela" : "Crie um treinamento para gerar o link de convite"}
+                    style={{ height: 30, padding: "0 12px", background: copiedId === e.id ? "#0f7a43" : "#fff", color: copiedId === e.id ? "#fff" : evento ? "#04377f" : "#aab3c0", border: `1.5px solid ${copiedId === e.id ? "#0f7a43" : "#cdd6e4"}`, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: evento ? "pointer" : "not-allowed", whiteSpace: "nowrap" }}
+                  >
+                    {copiedId === e.id ? "✓ Copiado!" : "🔗 Copiar link"}
+                  </button>
                   <button
                     type="button"
                     onClick={() => editar(e)}

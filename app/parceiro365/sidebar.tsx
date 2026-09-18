@@ -57,32 +57,15 @@ export function Sidebar({
     >
       <div
         style={{
-          padding: "22px 22px 18px",
+          padding: "18px 16px 16px",
           display: "flex",
           alignItems: "center",
-          gap: 11,
+          justifyContent: "center",
           borderBottom: "1px solid rgba(255,255,255,0.10)",
         }}
       >
-        <div
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 9,
-            background: "#f9b801",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 800,
-            color: "#04377f",
-            fontSize: 14,
-          }}
-        >
-          365
-        </div>
-        <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
-          Parceiro <span style={{ color: "#f9b801" }}>365</span>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/logo-parceiro365.svg" alt="Parceiro 365" style={{ width: 120, height: "auto", display: "block" }} />
       </div>
 
       <nav style={{ flex: 1, padding: "14px 12px", display: "flex", flexDirection: "column", gap: 3 }}>

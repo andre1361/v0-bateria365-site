@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from "drizzle-orm"
+import { asc, desc, eq, inArray } from "drizzle-orm"
 import { db } from "@/db"
 import { companies, students, events, rsvps, sellers } from "@/db/schema"
 import { PageHeader } from "../../page-header"
@@ -36,7 +36,11 @@ export default async function EmpresasPage() {
     .orderBy(asc(students.nome))
 
   // Confirmações (RSVP) dos eventos do distribuidor, agrupadas por nome de empresa.
-  const evs = await db.select({ id: events.id }).from(events).where(eq(events.distributorId, u.id))
+  const evs = await db
+    .select({ id: events.id, slug: events.slug, titulo: events.titulo })
+    .from(events)
+    .where(eq(events.distributorId, u.id))
+    .orderBy(desc(events.createdAt))
   const evIds = evs.map((e) => e.id)
   const rs = evIds.length ? await db.select({ empresa: rsvps.empresa }).from(rsvps).where(inArray(rsvps.eventId, evIds)) : []
   const rsvpByEmpresa = new Map<string, number>()
@@ -67,11 +71,14 @@ export default async function EmpresasPage() {
 
   const semEmpresa = studs.filter((s) => !s.companyId).length
 
+  // Treinamento mais recente do distribuidor — base do link de convite por empresa.
+  const evento = evs[0] ? { slug: evs[0].slug, titulo: evs[0].titulo } : null
+
   return (
     <>
       <PageHeader title="Empresas" subtitle="Clientes e convidados por empresa" />
       <main style={{ flex: 1, padding: "26px 28px 56px" }}>
-        <CompaniesClient empresas={empresas} semEmpresa={semEmpresa} sellers={sellersRows} />
+        <CompaniesClient empresas={empresas} semEmpresa={semEmpresa} sellers={sellersRows} evento={evento} />
       </main>
     </>
   )

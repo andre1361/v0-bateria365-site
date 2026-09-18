@@ -61,26 +61,9 @@ export function LoginForm() {
             minHeight: 520,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 11,
-                background: "#f9b801",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 800,
-                color: "#04377f",
-                fontSize: 18,
-              }}
-            >
-              365
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.01em" }}>
-              Parceiro <span style={{ color: "#f9b801" }}>365</span>
-            </div>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/logo-parceiro365.svg" alt="Parceiro 365" style={{ width: 156, height: "auto", display: "block" }} />
           </div>
           <div>
             <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.02em" }}>
