@@ -1276,12 +1276,17 @@ export function EstamosChegando(_p: any = {}) {
       </div>
       <div style={{
         position: "absolute",
-        left: 533,
+        left: 768,
         top: 1812,
-        width: 470,
-        height: 90,
-        background: "url(/convites/logo365.png) center / contain no-repeat",
-      }} />
+        transform: "translateX(-50%)",
+        display: "flex",
+        alignItems: "center",
+        gap: 30,
+      }}>
+        <div style={{ width: 266, height: 74, flex: "none", background: "url(/images/logo-moura-branco.svg) center / contain no-repeat" }} />
+        <div style={{ width: 2, height: 62, flex: "none", background: "rgba(255,255,255,0.45)" }} />
+        <div style={{ width: 406, height: 78, flex: "none", background: "url(/convites/logo365.png) center / contain no-repeat" }} />
+      </div>
       <div style={{
         position: "absolute",
         left: 259,
