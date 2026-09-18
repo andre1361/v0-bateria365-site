@@ -228,13 +228,17 @@ export function ConviteUniaoDiadema(_p: any = {}) {
         }}>Um treinamento de lojista para lojista, feito para quem quer dominar o novo mercado de baterias e aproveitar as tecnologias que simplificam a rotina e aumentam os resultados da sua loja.</span>
         <div style={{
           position: "absolute",
-          left: 372,
+          left: 510,
           top: 420,
-          width: 276,
-          height: 53,
-          transform: "translate(" + offLogoX + "px, " + offLogoY + "px)",
-          background: "url(/convites/logo365.png) center / contain no-repeat",
-        }} />
+          transform: "translateX(-50%) translate(" + offLogoX + "px, " + offLogoY + "px)",
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+        }}>
+          <div style={{ width: 158, height: 44, flex: "none", background: "url(/images/logo-moura-branco.svg) center / contain no-repeat" }} />
+          <div style={{ width: 2, height: 36, flex: "none", background: "rgba(255,255,255,0.5)" }} />
+          <div style={{ width: 240, height: 46, flex: "none", background: "url(/convites/logo365.png) center / contain no-repeat" }} />
+        </div>
         <div style={{
           position: "absolute",
           left: 0,
