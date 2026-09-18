@@ -281,7 +281,7 @@ export function CompaniesClient({ empresas, semEmpresa, sellers }: { empresas: E
                       type="submit"
                       title="Excluir"
                       onClick={(ev) => {
-                        if (!confirm(`Excluir "${e.nome}"? Os alunos vinculados serão desvinculados (não excluídos).`)) ev.preventDefault()
+                        if (!confirm(`Excluir "${e.nome}"? Os alunos desta empresa também serão excluídos.`)) ev.preventDefault()
                       }}
                       style={{ height: 30, width: 30, background: "#fff", color: "#c0392b", border: "1.5px solid #ecdcd9", borderRadius: 8, fontSize: 14, cursor: "pointer" }}
                     >

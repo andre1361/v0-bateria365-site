@@ -10,8 +10,8 @@ export default async function SorteiosPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams
   const treino = (sp?.treino || "").trim()
 
-  const rows = await db.select({ nome: students.nome }).from(students).where(eq(students.distributorId, u.id)).orderBy(asc(students.nome))
-  const alunos = rows.map((r) => r.nome)
+  const rows = await db.select({ nome: students.nome, empresa: students.empresa }).from(students).where(eq(students.distributorId, u.id)).orderBy(asc(students.nome))
+  const alunos = rows.map((r) => ({ nome: r.nome, empresa: (r.empresa || "").trim() }))
 
   let participantesIniciais: string[] = []
   let treinoTitulo = ""

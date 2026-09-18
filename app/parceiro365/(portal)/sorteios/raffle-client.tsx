@@ -22,7 +22,10 @@ async function fireConfetti() {
   }
 }
 
-export function RaffleClient({ alunos, participantesIniciais = [] }: { alunos: string[]; participantesIniciais?: string[] }) {
+type Aluno = { nome: string; empresa: string }
+const EMPRESA_VAZIA = "Sem empresa"
+
+export function RaffleClient({ alunos, participantesIniciais = [] }: { alunos: Aluno[]; participantesIniciais?: string[] }) {
   const [modo, setModo] = useState<Modo>("nomes")
 
   // --- modo nomes ---
@@ -34,6 +37,9 @@ export function RaffleClient({ alunos, participantesIniciais = [] }: { alunos: s
   const [parseError, setParseError] = useState("")
   const [fileMsg, setFileMsg] = useState("")
   const fileRef = useRef<HTMLInputElement>(null)
+  // Importar alunos escolhendo quais empresas entram no sorteio.
+  const [impOpen, setImpOpen] = useState(false)
+  const [impSel, setImpSel] = useState<Set<string>>(new Set())
 
   // --- modo números ---
   const [minStr, setMinStr] = useState("1")
@@ -110,10 +116,38 @@ export function RaffleClient({ alunos, participantesIniciais = [] }: { alunos: s
     setNovoPart("")
   }
 
-  const importarAlunos = () => {
+  const labelEmpresa = (a: Aluno) => (a.empresa || "").trim() || EMPRESA_VAZIA
+  const gruposEmpresa = (() => {
+    const m = new Map<string, number>()
+    for (const a of alunos) m.set(labelEmpresa(a), (m.get(labelEmpresa(a)) || 0) + 1)
+    return Array.from(m.entries())
+      .map(([empresa, total]) => ({ empresa, total }))
+      .sort((x, y) => x.empresa.localeCompare(y.empresa, "pt-BR"))
+  })()
+  const nomesSelecionados = alunos.filter((a) => impSel.has(labelEmpresa(a))).map((a) => a.nome)
+
+  const abrirImport = () => {
+    setImpSel(new Set(gruposEmpresa.map((g) => g.empresa))) // todas marcadas por padrão
+    setImpOpen(true)
+  }
+  const toggleEmpresa = (empresa: string) =>
+    setImpSel((prev) => {
+      const n = new Set(prev)
+      if (n.has(empresa)) n.delete(empresa)
+      else n.add(empresa)
+      return n
+    })
+  const confirmarImport = () => {
     const existentes = new Set(participantes.map((p) => p.nome.toLowerCase()))
-    const novos = alunos.filter((n) => !existentes.has(n.toLowerCase())).map((n, i) => ({ id: "a" + i + "_" + n, nome: n }))
+    const novos: Part[] = []
+    nomesSelecionados.forEach((nome, i) => {
+      const key = nome.toLowerCase()
+      if (existentes.has(key)) return
+      existentes.add(key)
+      novos.push({ id: "a" + Date.now() + "_" + i + "_" + nome, nome })
+    })
     if (novos.length) setParticipantes((prev) => [...prev, ...novos])
+    setImpOpen(false)
   }
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -429,9 +463,9 @@ export function RaffleClient({ alunos, participantesIniciais = [] }: { alunos: s
               <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                 <button
                   type="button"
-                  onClick={importarAlunos}
+                  onClick={abrirImport}
                   disabled={!alunos.length}
-                  style={{ flex: 1, height: 36, background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: alunos.length ? "pointer" : "not-allowed", opacity: alunos.length ? 1 : 0.5 }}
+                  style={{ flex: 1, height: 36, background: impOpen ? "#04377f" : "#fff", color: impOpen ? "#fff" : "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 9, fontSize: 12, fontWeight: 700, cursor: alunos.length ? "pointer" : "not-allowed", opacity: alunos.length ? 1 : 0.5 }}
                 >
                   Importar alunos
                 </button>
@@ -444,6 +478,42 @@ export function RaffleClient({ alunos, participantesIniciais = [] }: { alunos: s
                 </button>
                 <input ref={fileRef} type="file" accept=".csv,.xml,text/csv,text/xml,application/xml" style={{ display: "none" }} onChange={onFile} />
               </div>
+
+              {impOpen && (
+                <div style={{ background: "#f7faff", border: "1px solid #dbe6f5", borderRadius: 11, padding: 12, marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 700, color: "#04377f" }}>Empresas no sorteio</span>
+                    <button
+                      type="button"
+                      onClick={() => setImpSel(impSel.size === gruposEmpresa.length ? new Set() : new Set(gruposEmpresa.map((g) => g.empresa)))}
+                      style={{ background: "none", border: "none", color: "#04377f", fontSize: 11.5, fontWeight: 700, cursor: "pointer", padding: 0 }}
+                    >
+                      {impSel.size === gruposEmpresa.length ? "Nenhuma" : "Todas"}
+                    </button>
+                  </div>
+                  <div style={{ maxHeight: 190, overflow: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+                    {gruposEmpresa.length === 0 ? (
+                      <div style={{ fontSize: 12, color: "#8a94a3" }}>Nenhum aluno cadastrado.</div>
+                    ) : (
+                      gruposEmpresa.map((g) => (
+                        <label key={g.empresa} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#1f2733", cursor: "pointer", padding: "5px 4px" }}>
+                          <input type="checkbox" checked={impSel.has(g.empresa)} onChange={() => toggleEmpresa(g.empresa)} style={{ width: 15, height: 15, accentColor: "#04377f", flex: "none" }} />
+                          <span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontStyle: g.empresa === EMPRESA_VAZIA ? "italic" : "normal" }}>{g.empresa}</span>
+                          <span style={{ fontSize: 11.5, color: "#8a94a3", flex: "none" }}>{g.total}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button type="button" onClick={confirmarImport} disabled={!nomesSelecionados.length} style={{ flex: 1, height: 34, background: "#04377f", color: "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: nomesSelecionados.length ? "pointer" : "not-allowed", opacity: nomesSelecionados.length ? 1 : 0.6 }}>
+                      Importar {nomesSelecionados.length} aluno(s)
+                    </button>
+                    <button type="button" onClick={() => setImpOpen(false)} style={{ flex: "none", height: 34, padding: "0 12px", background: "#fff", color: "#6a7585", border: "1.5px solid #dde3ec", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {parseError && <p style={{ margin: "0 0 12px", fontSize: 12, color: "#c0392b", fontWeight: 600 }}>{parseError}</p>}
 
