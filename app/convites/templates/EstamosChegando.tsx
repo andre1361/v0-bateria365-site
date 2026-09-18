@@ -1277,7 +1277,7 @@ export function EstamosChegando(_p: any = {}) {
       <div style={{
         position: "absolute",
         left: 768,
-        top: 1812,
+        top: 1841,
         transform: "translateX(-50%)",
         display: "flex",
         alignItems: "center",
