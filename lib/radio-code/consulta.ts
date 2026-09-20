@@ -57,7 +57,7 @@ export async function consultarCodigoRadio(placaBruta: string, consultar: Consul
     }
     // 422 = placa rejeitada pela Renault; converter não vai ajudar.
     if (resposta.status === 422) {
-      return { ok: false, erro: mensagemDe(resposta), tentativas }
+      return { ok: false, erro: "A Renault não aceitou essa placa. Confira se digitou certo e tente de novo.", tentativas }
     }
   }
 
