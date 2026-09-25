@@ -66,6 +66,7 @@ export default async function EquipePage({ params }: { params: Promise<{ slug: s
           horario: ev.horario,
           distribuidor: row.distNome,
           local: ev.local,
+          fundoUrl: ev.fundoUrl,
           offBadge: -22,
           offTitle: 10,
           offPill: 24,

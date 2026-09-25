@@ -17,6 +17,7 @@ export default async function ConvitesModulePage({ searchParams }: { searchParam
     dataISO: e.dataISO,
     horario: e.horario,
     local: e.local,
+    fundoUrl: e.fundoUrl,
   }))
 
   // Já vem com um treinamento selecionado: o pedido por ?evento=id, ou o mais recente.

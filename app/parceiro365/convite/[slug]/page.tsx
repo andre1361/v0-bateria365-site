@@ -47,6 +47,7 @@ export default async function ConvitePage({ params }: { params: Promise<{ slug: 
           horario: ev.horario,
           distribuidor: row.distNome,
           local: ev.local,
+          fundoUrl: ev.fundoUrl,
           offBadge: -22,
           offTitle: 10,
           offPill: 24,
