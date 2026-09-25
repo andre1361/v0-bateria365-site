@@ -118,11 +118,15 @@ export type InviteMeta = {
 export function InviteEditor({
   headerRight,
   onGenerated,
+  onPhotoChange,
   embedded,
   initial,
 }: {
   headerRight?: React.ReactNode
   onGenerated?: (meta: InviteMeta) => void
+  // Avisa o container sempre que a foto de fundo muda (data URL enviada ou URL
+  // hospedada pré-carregada). Usado para "Salvar no convite online".
+  onPhotoChange?: (fundoUrl: string) => void
   // embedded=true: preenche a altura do container (uso dentro do portal),
   // em vez de ocupar a tela inteira (100vh).
   embedded?: boolean
@@ -195,6 +199,11 @@ export function InviteEditor({
   useEffect(() => {
     fitPreview()
   }, [state.template, fitPreview])
+
+  // avisa o container quando a foto de fundo muda (para salvar no convite online)
+  useEffect(() => {
+    onPhotoChange?.(state.fundoUrl || "")
+  }, [state.fundoUrl, onPhotoChange])
 
   const localFontSize = useMemo(() => {
     const text = "Local: " + (state.local || "")

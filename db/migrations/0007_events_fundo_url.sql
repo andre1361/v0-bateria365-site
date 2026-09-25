@@ -1,0 +1,1 @@
+ALTER TABLE "events" ADD COLUMN "fundo_url" text DEFAULT '' NOT NULL;

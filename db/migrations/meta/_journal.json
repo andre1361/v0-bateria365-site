@@ -50,6 +50,13 @@
       "when": 1782843835034,
       "tag": "0006_pale_silver_centurion",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790366174268,
+      "tag": "0007_events_fundo_url",
+      "breakpoints": true
     }
   ]
 }
