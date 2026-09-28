@@ -6,14 +6,32 @@ import { events, users } from "@/db/schema"
 import { InvitePreview } from "@/app/convites/invite-preview"
 import { RsvpForm } from "./rsvp-form"
 
-export const metadata: Metadata = {
-  title: "Convite",
-  robots: { index: false, follow: false },
-}
-
 function fmtDate(iso: string) {
   const p = (iso || "").split("-")
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso || ""
+}
+
+const NOINDEX = { index: false, follow: false } as const
+
+// Metadados do convite (título/descrição/imagem) para a prévia ao compartilhar
+// (WhatsApp, etc.) mostrar os dados do treinamento em vez do site padrão.
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const [row] = await db.select({ ev: events }).from(events).where(and(eq(events.slug, slug), eq(events.ativo, true)))
+  if (!row) return { title: "Convite", robots: NOINDEX }
+  const ev = row.ev
+  const quando = [fmtDate(ev.dataISO), ev.horario].filter(Boolean).join(" às ")
+  const detalhes = [quando, ev.local].filter(Boolean).join(" · ")
+  const title = ev.titulo ? `Convite: ${ev.titulo}` : "Convite para o treinamento"
+  const description = `Você está convidado para o ${ev.titulo || "treinamento Bateria 365"}${ev.cidade ? ` em ${ev.cidade}` : ""}.${detalhes ? ` ${detalhes}.` : ""} Confirme sua presença.`
+  const image = ev.fundoUrl || "/images/especialistas.webp"
+  return {
+    title,
+    description,
+    robots: NOINDEX,
+    openGraph: { title, description, images: [{ url: image }], type: "website" },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
+  }
 }
 
 export default async function ConvitePage({ params }: { params: Promise<{ slug: string }> }) {

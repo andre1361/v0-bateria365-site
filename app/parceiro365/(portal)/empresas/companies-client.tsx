@@ -98,15 +98,15 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
     const quando = [evento.dataFmt, evento.horario].filter(Boolean).join(" às ")
     const saud = (e.responsavel || "").trim()
     const linhas = [
-      saud ? `Olá, ${saud}! Tudo certo? 👋` : "Olá! Tudo certo? 👋",
+      saud ? `Olá, ${saud}! Tudo certo?` : "Olá! Tudo certo?",
       distribuidorNome ? `Aqui é ${distribuidorNome}, distribuidor parceiro do Bateria 365.` : "Aqui é o distribuidor parceiro do Bateria 365.",
       "",
-      `Temos um treinamento exclusivo para lojistas e queremos convidar a ${e.nome}! 🚀`,
+      `Temos um treinamento exclusivo para lojistas e queremos convidar a ${e.nome}!`,
     ]
     const info: string[] = []
-    if (evento.titulo) info.push(`📌 ${evento.titulo}`)
-    if (quando) info.push(`🗓️ ${quando}`)
-    if (evento.local) info.push(`📍 ${evento.local}`)
+    if (evento.titulo) info.push(`Treinamento: ${evento.titulo}`)
+    if (quando) info.push(`Data: ${quando}`)
+    if (evento.local) info.push(`Local: ${evento.local}`)
     if (info.length) linhas.push("", ...info)
     linhas.push("", "Garanta a presença da sua equipe pelo link abaixo:", link)
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(linhas.join("\n"))}`
