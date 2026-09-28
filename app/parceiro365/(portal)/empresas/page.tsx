@@ -14,6 +14,11 @@ function norm(s: string) {
     .replace(new RegExp("[\\u0300-\\u036f]", "g"), "")
 }
 
+function fmtDate(iso: string) {
+  const p = (iso || "").split("-")
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso || ""
+}
+
 export default async function EmpresasPage() {
   const u = await requireUser()
 
@@ -38,7 +43,7 @@ export default async function EmpresasPage() {
 
   // Confirmações (RSVP) dos eventos do distribuidor, agrupadas por nome de empresa.
   const evs = await db
-    .select({ id: events.id, slug: events.slug, titulo: events.titulo })
+    .select({ id: events.id, slug: events.slug, titulo: events.titulo, dataISO: events.dataISO, horario: events.horario, local: events.local, cidade: events.cidade })
     .from(events)
     .where(eq(events.distributorId, u.id))
     .orderBy(desc(events.createdAt))
@@ -73,14 +78,17 @@ export default async function EmpresasPage() {
   const semEmpresa = studs.filter((s) => !s.companyId).length
 
   // Treinamento mais recente do distribuidor — base do link de convite por empresa.
-  const evento = evs[0] ? { slug: evs[0].slug, titulo: evs[0].titulo } : null
+  const ev0 = evs[0]
+  const evento = ev0
+    ? { slug: ev0.slug, titulo: ev0.titulo, dataFmt: fmtDate(ev0.dataISO), horario: ev0.horario, local: ev0.local, cidade: ev0.cidade }
+    : null
 
   return (
     <>
       <PageHeader title="Empresas" subtitle="Clientes e convidados por empresa" />
       <main style={{ flex: 1, padding: "26px 28px 56px" }}>
         <ImportCompanies />
-        <CompaniesClient empresas={empresas} semEmpresa={semEmpresa} sellers={sellersRows} evento={evento} />
+        <CompaniesClient empresas={empresas} semEmpresa={semEmpresa} sellers={sellersRows} evento={evento} distribuidorNome={u.nome} />
       </main>
     </>
   )
