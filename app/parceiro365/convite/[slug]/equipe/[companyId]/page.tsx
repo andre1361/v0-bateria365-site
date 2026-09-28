@@ -6,14 +6,37 @@ import { events, companies, rsvps, users } from "@/db/schema"
 import { InvitePreview } from "@/app/convites/invite-preview"
 import { TeamClient } from "./team-client"
 
-export const metadata: Metadata = {
-  title: "Cadastro de equipe",
-  robots: { index: false, follow: false },
-}
-
 function fmtDate(iso: string) {
   const p = (iso || "").split("-")
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso || ""
+}
+
+const NOINDEX = { index: false, follow: false } as const
+
+// Metadados do convite por empresa — a prévia ao compartilhar (WhatsApp, etc.)
+// mostra os dados do treinamento e a empresa, em vez do site padrão.
+export async function generateMetadata({ params }: { params: Promise<{ slug: string; companyId: string }> }): Promise<Metadata> {
+  const { slug, companyId } = await params
+  const [row] = await db.select({ ev: events }).from(events).where(and(eq(events.slug, slug), eq(events.ativo, true)))
+  if (!row) return { title: "Convite", robots: NOINDEX }
+  const ev = row.ev
+  const [co] = await db
+    .select({ nome: companies.nome })
+    .from(companies)
+    .where(and(eq(companies.id, companyId), eq(companies.distributorId, ev.distributorId)))
+  const quando = [fmtDate(ev.dataISO), ev.horario].filter(Boolean).join(" às ")
+  const detalhes = [quando, ev.local].filter(Boolean).join(" · ")
+  const alvo = co?.nome ? `a equipe da ${co.nome}` : "sua equipe"
+  const title = ev.titulo ? `Convite: ${ev.titulo}` : "Convite para o treinamento"
+  const description = `Convite para ${alvo} — ${ev.titulo || "treinamento Bateria 365"}${ev.cidade ? ` em ${ev.cidade}` : ""}.${detalhes ? ` ${detalhes}.` : ""}`
+  const image = ev.fundoUrl || "/images/especialistas.webp"
+  return {
+    title,
+    description,
+    robots: NOINDEX,
+    openGraph: { title, description, images: [{ url: image }], type: "website" },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
+  }
 }
 
 function norm(s: string) {
