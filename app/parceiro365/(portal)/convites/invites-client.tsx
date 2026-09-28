@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { InviteEditor, type InviteMeta, type EditorState } from "@/app/convites/invite-editor"
 import { logInvite, saveInvitePhoto } from "./actions"
 
@@ -27,6 +27,8 @@ export function InvitesClient({ eventos, distribuidorNome, initialEventId = "" }
   const [msg, setMsg] = useState<Msg>(null)
   // Fotos salvas nesta sessão (sobrepõe o valor vindo do servidor até recarregar).
   const [savedPhotos, setSavedPhotos] = useState<Record<string, string>>({})
+  // Captura da arte montada (definida pelo editor).
+  const captureRef = useRef<((scale?: number) => Promise<string>) | null>(null)
 
   const ev = eventos.find((e) => e.id === eventId)
   const evFundo = ev ? (savedPhotos[ev.id] ?? ev.fundoUrl) : ""
@@ -52,40 +54,51 @@ export function InvitesClient({ eventos, distribuidorNome, initialEventId = "" }
 
   const isVertical = ev?.template === "vertical"
 
+  const uploadDataUrl = useCallback(async (dataUrl: string, name: string): Promise<string> => {
+    const blob = await (await fetch(dataUrl)).blob()
+    const fd = new FormData()
+    fd.append("file", blob, name)
+    const r = await fetch("/api/upload-image", { method: "POST", body: fd })
+    if (!r.ok) throw new Error("upload")
+    const j = (await r.json()) as { url?: string }
+    if (!j.url) throw new Error("upload")
+    return j.url
+  }, [])
+
   const salvar = useCallback(async () => {
     if (!eventId) {
-      setMsg({ type: "err", text: "Escolha um treinamento acima para salvar a foto no link." })
+      setMsg({ type: "err", text: "Escolha um treinamento acima para salvar." })
       return
     }
     setSaving(true)
     setMsg(null)
     try {
-      let url = photo || ""
-      // Foto nova = data URL (base64). Sobe para o storage e usa a URL hospedada.
-      if (url.startsWith("data:")) {
-        const blob = await (await fetch(url)).blob()
-        const ext = (blob.type.split("/")[1] || "png").replace("+xml", "")
-        const fd = new FormData()
-        fd.append("file", blob, `convite.${ext}`)
-        const r = await fetch("/api/upload-image", { method: "POST", body: fd })
-        if (!r.ok) throw new Error("upload")
-        const j = (await r.json()) as { url?: string }
-        if (!j.url) throw new Error("upload")
-        url = j.url
+      // 1) Foto de fundo — alimenta a arte ao vivo na página do convite.
+      let fundo = photo || ""
+      if (fundo.startsWith("data:")) {
+        const ext = (fundo.slice(5, fundo.indexOf(";")).split("/")[1] || "png").replace("+xml", "")
+        fundo = await uploadDataUrl(fundo, `convite-fundo.${ext}`)
       }
-      const res = await saveInvitePhoto(eventId, url)
+      // 2) Arte montada — imagem de prévia ao compartilhar (og:image).
+      let arte = ""
+      const cap = captureRef.current
+      if (cap) {
+        const artDataUrl = await cap(1)
+        if (artDataUrl) arte = await uploadDataUrl(artDataUrl, "convite-arte.png")
+      }
+      const res = await saveInvitePhoto(eventId, fundo, arte)
       if (res.error) {
         setMsg({ type: "err", text: res.error })
       } else {
-        setSavedPhotos((m) => ({ ...m, [eventId]: url }))
-        setMsg({ type: "ok", text: url ? "Foto salva no convite online! ✅" : "Foto removida do convite online." })
+        setSavedPhotos((m) => ({ ...m, [eventId]: fundo }))
+        setMsg({ type: "ok", text: arte ? "Convite salvo! Foto e imagem de prévia atualizadas. ✅" : "Convite salvo! ✅" })
       }
     } catch {
-      setMsg({ type: "err", text: "Não consegui salvar a foto. Tente novamente." })
+      setMsg({ type: "err", text: "Não consegui salvar. Tente novamente." })
     } finally {
       setSaving(false)
     }
-  }, [eventId, photo])
+  }, [eventId, photo, uploadDataUrl])
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -119,8 +132,8 @@ export function InvitesClient({ eventos, distribuidorNome, initialEventId = "" }
               isVertical
                 ? "O modelo vertical usa arte fixa e não aceita foto personalizada."
                 : !eventId
-                  ? "Escolha um treinamento para salvar a foto no link."
-                  : "Salvar a foto atual no convite online deste treinamento."
+                  ? "Escolha um treinamento para salvar."
+                  : "Salvar a foto e a arte deste convite (aparecem no link e na prévia ao compartilhar)."
             }
             style={{
               height: 36,
@@ -135,7 +148,7 @@ export function InvitesClient({ eventos, distribuidorNome, initialEventId = "" }
               whiteSpace: "nowrap",
             }}
           >
-            {saving ? "Salvando…" : "💾 Salvar foto no convite online"}
+            {saving ? "Salvando…" : "💾 Salvar no convite online"}
           </button>
         </div>
       )}
@@ -152,6 +165,7 @@ export function InvitesClient({ eventos, distribuidorNome, initialEventId = "" }
           embedded
           initial={initial}
           onPhotoChange={onPhotoChange}
+          captureRef={captureRef}
           onGenerated={(meta: InviteMeta) => {
             logInvite(meta).catch(() => {})
           }}

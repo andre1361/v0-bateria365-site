@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const alvo = co?.nome ? `a equipe da ${co.nome}` : "sua equipe"
   const title = ev.titulo ? `Convite: ${ev.titulo}` : "Convite para o treinamento"
   const description = `Convite para ${alvo} — ${ev.titulo || "treinamento Bateria 365"}${ev.cidade ? ` em ${ev.cidade}` : ""}.${detalhes ? ` ${detalhes}.` : ""}`
-  const image = ev.fundoUrl || "/images/especialistas.webp"
+  const image = ev.arteUrl || ev.fundoUrl || "/images/especialistas.webp"
   return {
     title,
     description,

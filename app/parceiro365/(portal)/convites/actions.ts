@@ -30,17 +30,21 @@ export async function logInvite(meta: InviteLog): Promise<void> {
 
 export type SavePhotoResult = { ok?: boolean; error?: string }
 
-// Salva a foto de fundo escolhida na Arte do convite direto no treinamento,
-// para que o convite online (link enviado às empresas) passe a exibi-la.
-export async function saveInvitePhoto(eventId: string, fundoUrl: string): Promise<SavePhotoResult> {
+// Salva, no treinamento, a foto de fundo e a arte montada do convite escolhidas
+// na Arte do convite. A foto (fundoUrl) alimenta a arte ao vivo na página; a arte
+// montada (arteUrl) é a imagem de prévia ao compartilhar (og:image).
+export async function saveInvitePhoto(eventId: string, fundoUrl: string, arteUrl = ""): Promise<SavePhotoResult> {
   const u = await requireUser()
   if (!eventId) return { error: "Escolha um treinamento para salvar a foto." }
   const url = (fundoUrl || "").trim()
   // Só aceita URL hospedada (http/https) ou vazio (remover). Evita gravar base64 gigante no banco.
   if (url && !/^https?:\/\//i.test(url)) return { error: "Foto inválida. Envie a imagem novamente." }
+  const arte = (arteUrl || "").trim()
+  if (arte && !/^https?:\/\//i.test(arte)) return { error: "Arte inválida. Tente novamente." }
   const res = await db
     .update(events)
-    .set({ fundoUrl: url })
+    // arteUrl só é sobrescrita quando veio uma nova (evita apagar a existente se a captura falhar).
+    .set({ fundoUrl: url, ...(arte ? { arteUrl: arte } : {}) })
     .where(and(eq(events.id, eventId), eq(events.distributorId, u.id)))
     .returning({ id: events.id })
   if (res.length === 0) return { error: "Treinamento não encontrado." }
