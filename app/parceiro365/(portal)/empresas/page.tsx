@@ -4,6 +4,7 @@ import { companies, students, events, rsvps, sellers } from "@/db/schema"
 import { PageHeader } from "../../page-header"
 import { requireUser } from "../../guard"
 import { CompaniesClient } from "./companies-client"
+import { ImportCompanies } from "./import-companies-client"
 
 function norm(s: string) {
   return (s || "")
@@ -78,6 +79,7 @@ export default async function EmpresasPage() {
     <>
       <PageHeader title="Empresas" subtitle="Clientes e convidados por empresa" />
       <main style={{ flex: 1, padding: "26px 28px 56px" }}>
+        <ImportCompanies />
         <CompaniesClient empresas={empresas} semEmpresa={semEmpresa} sellers={sellersRows} evento={evento} />
       </main>
     </>
