@@ -103,6 +103,8 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
       "",
       `Temos um treinamento exclusivo para lojistas e queremos convidar a ${e.nome}!`,
     ]
+    const nConvites = e.convidadosPrevistos || 0
+    if (nConvites > 0) linhas.push(`Você recebeu ${nConvites} convite${nConvites === 1 ? "" : "s"} para o treinamento.`)
     const info: string[] = []
     if (evento.titulo) info.push(`Treinamento: ${evento.titulo}`)
     if (quando) info.push(`Data: ${quando}`)
