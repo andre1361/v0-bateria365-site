@@ -119,6 +119,7 @@ export function InviteEditor({
   headerRight,
   onGenerated,
   onPhotoChange,
+  captureRef,
   embedded,
   initial,
 }: {
@@ -127,6 +128,9 @@ export function InviteEditor({
   // Avisa o container sempre que a foto de fundo muda (data URL enviada ou URL
   // hospedada pré-carregada). Usado para "Salvar no convite online".
   onPhotoChange?: (fundoUrl: string) => void
+  // Recebe uma função para capturar a arte montada em PNG (data URL). Usado para
+  // salvar a imagem do convite (prévia ao compartilhar).
+  captureRef?: React.MutableRefObject<((scale?: number) => Promise<string>) | null>
   // embedded=true: preenche a altura do container (uso dentro do portal),
   // em vez de ocupar a tela inteira (100vh).
   embedded?: boolean
@@ -253,39 +257,69 @@ export function InviteEditor({
     r.readAsDataURL(f)
   }, [])
 
-  const download = useCallback(async () => {
-    const wrap = wrapRef.current
-    if (!wrap || state.downloading) return
-    setState((s) => ({ ...s, downloading: true }))
-    const d = state.template === "square" ? { w: 1080, h: 1076 } : { w: 1536, h: 2048 }
-    const saved = {
-      transform: wrap.style.transform,
-      left: wrap.style.left,
-      top: wrap.style.top,
-      origin: wrap.style.transformOrigin,
-    }
-    try {
-      if (document.fonts && document.fonts.ready) {
-        try {
-          await document.fonts.ready
-        } catch {
-          /* ignore */
-        }
+  // Renderiza a arte montada em PNG (data URL). scale=2 p/ download; 1 p/ prévia.
+  const captureArt = useCallback(
+    async (scale = 2): Promise<string> => {
+      const wrap = wrapRef.current
+      if (!wrap) return ""
+      const d = state.template === "square" ? { w: 1080, h: 1076 } : { w: 1536, h: 2048 }
+      const saved = {
+        transform: wrap.style.transform,
+        left: wrap.style.left,
+        top: wrap.style.top,
+        origin: wrap.style.transformOrigin,
       }
-      // neutraliza a escala/centralizacao para capturar a arte em 1:1
-      wrap.style.transform = "none"
-      wrap.style.left = "0px"
-      wrap.style.top = "0px"
-      wrap.style.transformOrigin = "top left"
-      void wrap.offsetWidth
-      await new Promise((r) => setTimeout(r, 80))
-      const { domToPng } = await import("modern-screenshot")
-      const dataUrl = await domToPng(wrap, {
-        scale: 2,
-        width: d.w,
-        height: d.h,
-        backgroundColor: state.template === "square" ? "#081344" : "#0a0a12",
-      })
+      try {
+        if (document.fonts && document.fonts.ready) {
+          try {
+            await document.fonts.ready
+          } catch {
+            /* ignore */
+          }
+        }
+        // neutraliza a escala/centralizacao para capturar a arte em 1:1
+        wrap.style.transform = "none"
+        wrap.style.left = "0px"
+        wrap.style.top = "0px"
+        wrap.style.transformOrigin = "top left"
+        void wrap.offsetWidth
+        await new Promise((r) => setTimeout(r, 80))
+        const { domToPng } = await import("modern-screenshot")
+        return await domToPng(wrap, {
+          scale,
+          width: d.w,
+          height: d.h,
+          backgroundColor: state.template === "square" ? "#081344" : "#0a0a12",
+        })
+      } catch (e) {
+        console.error("Falha ao gerar PNG:", e)
+        return ""
+      } finally {
+        wrap.style.transform = saved.transform
+        wrap.style.left = saved.left
+        wrap.style.top = saved.top
+        wrap.style.transformOrigin = saved.origin
+        void wrap.offsetWidth
+        fitPreview()
+      }
+    },
+    [state.template, fitPreview],
+  )
+
+  // Expõe a captura para o container (salvar a arte no convite online).
+  useEffect(() => {
+    if (captureRef) captureRef.current = captureArt
+    return () => {
+      if (captureRef) captureRef.current = null
+    }
+  }, [captureRef, captureArt])
+
+  const download = useCallback(async () => {
+    if (state.downloading) return
+    setState((s) => ({ ...s, downloading: true }))
+    try {
+      const dataUrl = await captureArt(2)
+      if (!dataUrl) return
       const safe =
         (state.cidade || "convite")
           .toLowerCase()
@@ -305,27 +339,10 @@ export function InviteEditor({
         distribuidor: state.distribuidor,
         local: state.local,
       })
-    } catch (e) {
-      console.error("Falha ao gerar PNG:", e)
     } finally {
-      wrap.style.transform = saved.transform
-      wrap.style.left = saved.left
-      wrap.style.top = saved.top
-      wrap.style.transformOrigin = saved.origin
       setState((s) => ({ ...s, downloading: false }))
-      fitPreview()
     }
-  }, [
-    state.downloading,
-    state.template,
-    state.cidade,
-    state.dataISO,
-    state.horario,
-    state.distribuidor,
-    state.local,
-    onGenerated,
-    fitPreview,
-  ])
+  }, [captureArt, state.downloading, state.template, state.cidade, state.dataISO, state.horario, state.distribuidor, state.local, onGenerated])
 
   const isSquare = state.template === "square"
   const off = state.offsets

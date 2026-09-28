@@ -133,6 +133,8 @@ export const events = pgTable("events", {
   template: text("template").notNull().default("square"),
   // Foto de fundo personalizada do convite (modelo quadrado). Vazio = arte padrão.
   fundoUrl: text("fundo_url").notNull().default(""),
+  // Arte montada do convite (PNG) para a prévia ao compartilhar (og:image).
+  arteUrl: text("arte_url").notNull().default(""),
   slug: text("slug").notNull().unique(),
   ativo: boolean("ativo").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

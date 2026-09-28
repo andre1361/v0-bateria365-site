@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const detalhes = [quando, ev.local].filter(Boolean).join(" · ")
   const title = ev.titulo ? `Convite: ${ev.titulo}` : "Convite para o treinamento"
   const description = `Você está convidado para o ${ev.titulo || "treinamento Bateria 365"}${ev.cidade ? ` em ${ev.cidade}` : ""}.${detalhes ? ` ${detalhes}.` : ""} Confirme sua presença.`
-  const image = ev.fundoUrl || "/images/especialistas.webp"
+  const image = ev.arteUrl || ev.fundoUrl || "/images/especialistas.webp"
   return {
     title,
     description,
