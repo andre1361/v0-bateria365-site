@@ -81,6 +81,7 @@ export type ImportRow = {
   telefone?: string
   email?: string
   observacoes?: string
+  convidadosPrevistos?: number
 }
 export type ImportResult = { imported: number; skipped: number; error?: string }
 
@@ -115,6 +116,7 @@ export async function importCompanies(rows: ImportRow[]): Promise<ImportResult> 
       telefone: String(r.telefone || "").trim(),
       email: String(r.email || "").trim(),
       observacoes: String(r.observacoes || "").trim(),
+      convidadosPrevistos: Math.max(0, Math.min(Math.trunc(Number(r.convidadosPrevistos) || 0), 100000)),
     })
   }
 
