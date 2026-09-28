@@ -48,8 +48,13 @@ export function TeamClient({
     .map((r) => ({ nome: r.nome.trim(), telefone: r.telefone.trim(), email: r.email.trim() }))
     .filter((r) => r.nome)
 
+  // Limite de convidados da empresa (convidadosPrevistos). 0 = sem limite.
+  const restante = meta > 0 ? Math.max(0, meta - jaCount) : Infinity
+  const semVaga = meta > 0 && restante <= 0
+  const podeAdicionar = rows.length < restante
+
   const setRow = (i: number, k: keyof Row, v: string) => setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, [k]: v } : r)))
-  const addRow = () => setRows((prev) => [...prev, { ...EMPTY }])
+  const addRow = () => setRows((prev) => (prev.length < restante ? [...prev, { ...EMPTY }] : prev))
   const removeRow = (i: number) => setRows((prev) => (prev.length <= 1 ? prev : prev.filter((_, idx) => idx !== i)))
 
   if (state.ok) {
@@ -59,6 +64,7 @@ export function TeamClient({
         <div style={{ fontSize: 20, fontWeight: 800, color: "#04377f" }}>{(state.added ?? 0) > 0 ? `${state.added} funcionário(s) adicionado(s)!` : "Tudo certo!"}</div>
         <p style={{ margin: "8px 0 0", fontSize: 14, color: "#6a7585", lineHeight: 1.5 }}>
           {(state.skipped ?? 0) > 0 ? `${state.skipped} já estavam na lista e foram ignorados. ` : ""}
+          {(state.overLimit ?? 0) > 0 ? `${state.overLimit} não couberam no limite de ${meta} da empresa. ` : ""}
           A equipe da <strong>{companyNome}</strong> está confirmada. 💛
         </p>
         <button
@@ -66,13 +72,23 @@ export function TeamClient({
           onClick={() => window.location.reload()}
           style={{ marginTop: 18, height: 48, padding: "0 22px", background: "#fff", color: "#04377f", border: "1.5px solid #cdd6e4", borderRadius: 12, fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}
         >
-          Adicionar mais funcionários
+          Ver a lista atualizada
         </button>
       </div>
     )
   }
 
-  const restante = meta > 0 ? Math.max(0, meta - jaCount) : 0
+  if (semVaga) {
+    return (
+      <div style={{ textAlign: "center", padding: "20px 8px" }}>
+        <div style={{ width: 64, height: 64, margin: "0 auto 12px", borderRadius: "50%", background: "#eef4fc", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }}>✅</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: "#04377f" }}>Equipe completa!</div>
+        <p style={{ margin: "8px 0 0", fontSize: 14, color: "#6a7585", lineHeight: 1.5 }}>
+          A <strong>{companyNome}</strong> já cadastrou os <strong>{meta}</strong> funcionário(s) previstos para este treinamento.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <form action={action}>
@@ -84,9 +100,9 @@ export function TeamClient({
       <p style={{ margin: "4px 0 16px", fontSize: 13.5, color: "#8a94a3" }}>
         Adicione os funcionários da <strong style={{ color: "#6a7585" }}>{companyNome}</strong> que vão participar do treinamento.
         {meta > 0
-          ? ` ${jaCount}/${meta} já cadastrados${restante > 0 ? ` · faltam ${restante}` : " · meta atingida"}.`
+          ? ` Você pode cadastrar até ${restante} funcionário(s) — a empresa tem ${meta} vaga(s)${jaCount > 0 ? `, ${jaCount} já cadastrada(s)` : ""}.`
           : jaCount > 0
-            ? ` ${jaCount} já cadastrados.`
+            ? ` ${jaCount} já cadastrado(s).`
             : ""}
       </p>
 
@@ -115,13 +131,21 @@ export function TeamClient({
         </div>
       ))}
 
-      <button
-        type="button"
-        onClick={addRow}
-        style={{ width: "100%", height: 44, marginBottom: 14, background: "#fff", color: "#04377f", border: "1.8px dashed #c3cedd", borderRadius: 11, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
-      >
-        + Adicionar outro funcionário
-      </button>
+      {podeAdicionar ? (
+        <button
+          type="button"
+          onClick={addRow}
+          style={{ width: "100%", height: 44, marginBottom: 14, background: "#fff", color: "#04377f", border: "1.8px dashed #c3cedd", borderRadius: 11, fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}
+        >
+          + Adicionar outro funcionário
+        </button>
+      ) : (
+        meta > 0 && (
+          <p style={{ margin: "0 0 14px", fontSize: 12.5, color: "#8a6d1a", background: "#fff8e6", border: "1px solid #f2e6c2", borderRadius: 10, padding: "9px 12px", textAlign: "center", fontWeight: 600 }}>
+            Você atingiu o limite de {restante} funcionário(s) que ainda pode(m) cadastrar neste convite.
+          </p>
+        )
+      )}
 
       {state.error && <p style={{ margin: "0 0 12px", fontSize: 13, color: "#c0392b", fontWeight: 600 }}>⚠ {state.error}</p>}
 

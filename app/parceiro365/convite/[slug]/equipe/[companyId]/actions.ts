@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
 import { events, companies, rsvps, students } from "@/db/schema"
 
-export type TeamState = { ok?: boolean; error?: string; added?: number; skipped?: number }
+export type TeamState = { ok?: boolean; error?: string; added?: number; skipped?: number; overLimit?: number }
 
 type Pessoa = { nome: string; telefone: string; email: string }
 
@@ -41,7 +41,7 @@ export async function registerTeam(_prev: TeamState, formData: FormData): Promis
   if (!ev) return { error: "Evento não encontrado ou desativado." }
 
   const [co] = await db
-    .select({ id: companies.id, nome: companies.nome })
+    .select({ id: companies.id, nome: companies.nome, meta: companies.convidadosPrevistos })
     .from(companies)
     .where(and(eq(companies.id, companyId), eq(companies.distributorId, ev.distributorId)))
   if (!co) return { error: "Empresa não encontrada." }
@@ -50,9 +50,25 @@ export async function registerTeam(_prev: TeamState, formData: FormData): Promis
   const jaRsvp = await db.select({ nome: rsvps.nome, empresa: rsvps.empresa }).from(rsvps).where(eq(rsvps.eventId, ev.id))
   const jaNomes = new Set(jaRsvp.filter((r) => norm(r.empresa) === norm(co.nome)).map((r) => norm(r.nome)))
 
-  const novos = people.filter((p) => !jaNomes.has(norm(p.nome)))
-  const skipped = people.length - novos.length
-  if (!novos.length) return { ok: true, added: 0, skipped }
+  const novosAll = people.filter((p) => !jaNomes.has(norm(p.nome)))
+  const skipped = people.length - novosAll.length
+
+  // Respeita o limite de convidados da empresa (convidadosPrevistos). 0 = sem limite.
+  const meta = co.meta || 0
+  let overLimit = 0
+  let novos = novosAll
+  if (meta > 0) {
+    const restante = Math.max(0, meta - jaNomes.size)
+    if (restante <= 0) {
+      return { error: `A ${co.nome} já atingiu o limite de ${meta} funcionário(s) para este treinamento.` }
+    }
+    if (novosAll.length > restante) {
+      overLimit = novosAll.length - restante
+      novos = novosAll.slice(0, restante)
+    }
+  }
+
+  if (!novos.length) return { ok: true, added: 0, skipped, overLimit }
 
   await db.insert(rsvps).values(novos.map((p) => ({ eventId: ev.id, nome: p.nome, telefone: p.telefone, email: p.email, empresa: co.nome })))
 
@@ -81,5 +97,5 @@ export async function registerTeam(_prev: TeamState, formData: FormData): Promis
   revalidatePath("/parceiro365/empresas")
   revalidatePath("/parceiro365/alunos")
   revalidatePath("/parceiro365/eventos")
-  return { ok: true, added: novos.length, skipped }
+  return { ok: true, added: novos.length, skipped, overLimit }
 }
