@@ -5,14 +5,15 @@ import { useRouter } from "next/navigation"
 import { parseListFile, parseXlsx, type ParsedList } from "../sorteios/parse-list"
 import { importCompanies, type ImportRow, type ImportResult } from "./actions"
 
-type TargetKey = "nome" | "cidade" | "responsavel" | "telefone" | "email" | "observacoes"
-const TARGETS: { key: TargetKey; label: string; required?: boolean; kw: RegExp }[] = [
+type TargetKey = "nome" | "cidade" | "responsavel" | "telefone" | "email" | "observacoes" | "convidadosPrevistos"
+const TARGETS: { key: TargetKey; label: string; required?: boolean; numeric?: boolean; kw: RegExp }[] = [
   { key: "nome", label: "Nome da empresa", required: true, kw: /revenda|empresa|nome|razao|raz|cliente|loja/ },
   { key: "cidade", label: "Cidade", kw: /cidade|munic|local/ },
   { key: "responsavel", label: "Responsável", kw: /propriet|respons|contato|dono|titular/ },
   { key: "telefone", label: "Telefone", kw: /tel|fone|celular|whats/ },
   { key: "email", label: "E-mail", kw: /mail/ },
   { key: "observacoes", label: "Observações", kw: /obs|cpf|cnpj|document|nota/ },
+  { key: "convidadosPrevistos", label: "Convidados previstos", numeric: true, kw: /convidad|previst|quant|vagas|participant|pessoas|lugares/ },
 ]
 
 function norm(s: string) {
@@ -41,21 +42,32 @@ export function ImportCompanies() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState("")
   const [result, setResult] = useState<ImportResult | null>(null)
+  const [defaultConv, setDefaultConv] = useState("0")
   const inputRef = useRef<HTMLInputElement>(null)
 
   const rows: ImportRow[] = useMemo(() => {
     if (!parsed) return []
+    const defNum = Math.min(parseInt((defaultConv || "").replace(/\D/g, "") || "0", 10) || 0, 100000)
+    const cSrc = map.convidadosPrevistos
     return parsed.records
       .map((rec) => {
         const r: ImportRow = { nome: "" }
         for (const t of TARGETS) {
+          if (t.numeric) continue
           const src = map[t.key]
           if (src) (r as Record<string, string>)[t.key] = rec[src] || ""
         }
+        // Convidados: usa a coluna mapeada (se numérica); senão, o padrão escolhido.
+        let conv = defNum
+        if (cSrc) {
+          const raw = (rec[cSrc] || "").replace(/\D/g, "")
+          if (raw) conv = Math.min(parseInt(raw, 10), 100000)
+        }
+        r.convidadosPrevistos = conv
         return r
       })
       .filter((r) => (r.nome || "").trim() !== "")
-  }, [parsed, map])
+  }, [parsed, map, defaultConv])
 
   async function onFile(file: File) {
     setErr("")
@@ -173,12 +185,31 @@ export function ImportCompanies() {
             ))}
           </div>
 
+          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", background: "#f8fafc", border: "1px solid #eef1f5", borderRadius: 10, padding: "10px 12px" }}>
+            <label htmlFor="imp-def-conv" style={{ fontSize: 12.5, fontWeight: 700, color: "#41506a" }}>
+              Convidados previstos por empresa (padrão):
+            </label>
+            <input
+              id="imp-def-conv"
+              type="number"
+              min={0}
+              value={defaultConv}
+              onChange={(e) => setDefaultConv(e.target.value)}
+              style={{ ...box, width: 90, maxWidth: 90, textAlign: "center" }}
+            />
+            <span style={{ fontSize: 12, color: "#8a94a3" }}>
+              {map.convidadosPrevistos
+                ? "Usado quando a coluna estiver vazia."
+                : "O arquivo não tem essa coluna — este número vale para todas. Dá pra ajustar empresa por empresa depois."}
+            </span>
+          </div>
+
           {/* Prévia */}
           <div style={{ marginTop: 14, overflowX: "auto", border: "1px solid #eef1f5", borderRadius: 10 }}>
             <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12.5 }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  {TARGETS.filter((t) => map[t.key]).map((t) => (
+                  {TARGETS.filter((t) => map[t.key] || t.numeric).map((t) => (
                     <th key={t.key} style={{ textAlign: "left", padding: "8px 10px", color: "#6a7585", fontWeight: 800, whiteSpace: "nowrap", borderBottom: "1px solid #eef1f5" }}>
                       {t.label}
                     </th>
@@ -188,9 +219,11 @@ export function ImportCompanies() {
               <tbody>
                 {rows.slice(0, 6).map((r, i) => (
                   <tr key={i}>
-                    {TARGETS.filter((t) => map[t.key]).map((t) => (
+                    {TARGETS.filter((t) => map[t.key] || t.numeric).map((t) => (
                       <td key={t.key} style={{ padding: "7px 10px", borderBottom: "1px solid #f4f6f9", whiteSpace: "nowrap", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {(r as Record<string, string>)[t.key] || <span style={{ color: "#c3c9d4" }}>—</span>}
+                        {t.numeric
+                          ? String((r as Record<string, unknown>)[t.key] ?? 0)
+                          : (r as Record<string, string>)[t.key] || <span style={{ color: "#c3c9d4" }}>—</span>}
                       </td>
                     ))}
                   </tr>
