@@ -99,7 +99,7 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
     const saud = (e.responsavel || "").trim()
     const linhas = [
       saud ? `Olá, ${saud}! Tudo certo?` : "Olá! Tudo certo?",
-      distribuidorNome ? `Aqui é ${distribuidorNome}, distribuidor parceiro do Bateria 365.` : "Aqui é o distribuidor parceiro do Bateria 365.",
+      distribuidorNome ? `Aqui é ${distribuidorNome}, distribuidor Moura, parceiro do Bateria 365.` : "Aqui é o distribuidor Moura, parceiro do Bateria 365.",
       "",
       `Temos um treinamento exclusivo para lojistas e queremos convidar a ${e.nome}!`,
     ]
