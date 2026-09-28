@@ -58,7 +58,9 @@ function iniciais(nome: string) {
     .join("")
 }
 
-export function CompaniesClient({ empresas, semEmpresa, sellers, evento }: { empresas: Empresa[]; semEmpresa: number; sellers: Seller[]; evento: { slug: string; titulo: string } | null }) {
+type Evento = { slug: string; titulo: string; dataFmt: string; horario: string; local: string; cidade: string }
+
+export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distribuidorNome }: { empresas: Empresa[]; semEmpresa: number; sellers: Seller[]; evento: Evento | null; distribuidorNome: string }) {
   const [state, action, saving] = useActionState(saveCompany, initial)
   const [form, setForm] = useState<Form>(EMPTY)
   const [sellerNew, setSellerNew] = useState("")
@@ -84,6 +86,31 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento }: { emp
     } catch {
       window.prompt("Copie o link do convite desta empresa:", url)
     }
+  }
+
+  // Abre o WhatsApp (web/app) com a mensagem de convite pronta para a empresa.
+  const enviarWhats = (e: Empresa) => {
+    if (!evento) return
+    const digits = (e.telefone || "").replace(/\D/g, "")
+    const phone = digits.length === 10 || digits.length === 11 ? "55" + digits : digits
+    if (!phone) return
+    const link = `${origin}/parceiro365/convite/${evento.slug}/equipe/${e.id}`
+    const quando = [evento.dataFmt, evento.horario].filter(Boolean).join(" às ")
+    const saud = (e.responsavel || "").trim()
+    const linhas = [
+      saud ? `Olá, ${saud}! Tudo certo? 👋` : "Olá! Tudo certo? 👋",
+      distribuidorNome ? `Aqui é ${distribuidorNome}, distribuidor parceiro do Bateria 365.` : "Aqui é o distribuidor parceiro do Bateria 365.",
+      "",
+      `Temos um treinamento exclusivo para lojistas e queremos convidar a ${e.nome}! 🚀`,
+    ]
+    const info: string[] = []
+    if (evento.titulo) info.push(`📌 ${evento.titulo}`)
+    if (quando) info.push(`🗓️ ${quando}`)
+    if (evento.local) info.push(`📍 ${evento.local}`)
+    if (info.length) linhas.push("", ...info)
+    linhas.push("", "Garanta a presença da sua equipe pelo link abaixo:", link)
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(linhas.join("\n"))}`
+    window.open(url, "_blank", "noopener,noreferrer")
   }
 
   const set = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -292,6 +319,17 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento }: { emp
                   >
                     {copiedId === e.id ? "✓ Copiado!" : "🔗 Copiar link"}
                   </button>
+                  {e.telefone && (
+                    <button
+                      type="button"
+                      onClick={() => enviarWhats(e)}
+                      disabled={!evento}
+                      title={evento ? "Abrir o WhatsApp com a mensagem de convite pronta para esta empresa" : "Crie um treinamento para gerar o convite"}
+                      style={{ height: 30, padding: "0 12px", background: evento ? "#25D366" : "#eef1f5", color: evento ? "#fff" : "#aab3c0", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: evento ? "pointer" : "not-allowed", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}
+                    >
+                      <span aria-hidden>📲</span> WhatsApp
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => editar(e)}
