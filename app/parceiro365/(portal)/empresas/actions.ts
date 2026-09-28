@@ -74,6 +74,60 @@ export async function saveCompany(_prev: CompanyState, formData: FormData): Prom
   return { ok: "Empresa cadastrada." }
 }
 
+export type ImportRow = {
+  nome: string
+  cidade?: string
+  responsavel?: string
+  telefone?: string
+  email?: string
+  observacoes?: string
+}
+export type ImportResult = { imported: number; skipped: number; error?: string }
+
+// Importa empresas em massa (CSV/Excel). Ignora linhas sem nome e nomes que já
+// existem para este distribuidor (evita duplicar).
+export async function importCompanies(rows: ImportRow[]): Promise<ImportResult> {
+  const u = await requireUser()
+  if (!Array.isArray(rows) || rows.length === 0) return { imported: 0, skipped: 0, error: "Nada para importar." }
+
+  const existing = await db.select({ nome: companies.nome }).from(companies).where(eq(companies.distributorId, u.id))
+  const seen = new Set(existing.map((e) => normName(e.nome)))
+
+  const toInsert: (typeof companies.$inferInsert)[] = []
+  let skipped = 0
+  for (const r of rows.slice(0, 5000)) {
+    const nome = String(r?.nome || "").trim()
+    if (!nome) {
+      skipped++
+      continue
+    }
+    const k = normName(nome)
+    if (seen.has(k)) {
+      skipped++
+      continue
+    }
+    seen.add(k)
+    toInsert.push({
+      distributorId: u.id,
+      nome,
+      cidade: String(r.cidade || "").trim(),
+      responsavel: String(r.responsavel || "").trim(),
+      telefone: String(r.telefone || "").trim(),
+      email: String(r.email || "").trim(),
+      observacoes: String(r.observacoes || "").trim(),
+    })
+  }
+
+  if (toInsert.length) {
+    // insere em lotes para não estourar limites de parâmetros do driver
+    for (let i = 0; i < toInsert.length; i += 200) {
+      await db.insert(companies).values(toInsert.slice(i, i + 200))
+    }
+    revalidatePath("/parceiro365/empresas")
+  }
+  return { imported: toInsert.length, skipped }
+}
+
 export async function assignSeller(formData: FormData): Promise<void> {
   const u = await requireUser()
   const companyId = String(formData.get("companyId") || "")
