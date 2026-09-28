@@ -33,6 +33,25 @@ function autoMap(fields: string[]): Record<TargetKey, string> {
 
 const box: React.CSSProperties = { height: 34, padding: "0 8px", fontSize: 13, border: "1.5px solid #dde3ec", borderRadius: 8, color: "#1f2733", background: "#fff", maxWidth: 220 }
 
+// Gera e baixa um modelo de planilha (CSV) com as colunas da importação.
+// Usa ";" (Excel pt-BR) e BOM para os acentos abrirem corretamente.
+function baixarModelo() {
+  const headers = ["Nome da empresa", "Cidade", "Responsável", "Telefone", "E-mail", "Convidados previstos", "Observações"]
+  const exemplo = ["Baterias Exemplo LTDA", "Goiânia", "João da Silva", "(62) 99999-0000", "contato@exemplo.com", "4", "apague esta linha de exemplo"]
+  const esc = (v: string) => (/[";\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
+  const corpo = [headers, exemplo].map((r) => r.map(esc).join(";")).join("\r\n")
+  const csv = "﻿" + corpo + "\r\n"
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = "modelo-importacao-empresas.csv"
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
 export function ImportCompanies() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -157,6 +176,18 @@ export function ImportCompanies() {
           />
         </label>
         {fileName && <span style={{ fontSize: 12.5, color: "#6a7585" }}>{fileName}</span>}
+      </div>
+
+      <div style={{ marginTop: 10, fontSize: 12.5, color: "#6a7585" }}>
+        Não tem uma planilha pronta?{" "}
+        <button
+          type="button"
+          onClick={baixarModelo}
+          style={{ background: "none", border: "none", color: "#04377f", fontWeight: 800, cursor: "pointer", padding: 0, textDecoration: "underline", fontSize: 12.5 }}
+        >
+          ⬇️ Baixar modelo
+        </button>{" "}
+        com as colunas certas para preencher e enviar de volta.
       </div>
 
       {err && <div style={{ marginTop: 12, fontSize: 13, color: "#c0392b", fontWeight: 600 }}>⚠ {err}</div>}
