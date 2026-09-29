@@ -58,6 +58,10 @@ function iniciais(nome: string) {
     .join("")
 }
 
+function normStr(s: string) {
+  return (s || "").toLowerCase().normalize("NFD").replace(new RegExp("[\\u0300-\\u036f]", "g"), "")
+}
+
 type Evento = { slug: string; titulo: string; dataFmt: string; horario: string; local: string; cidade: string }
 
 export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distribuidorNome }: { empresas: Empresa[]; semEmpresa: number; sellers: Seller[]; evento: Evento | null; distribuidorNome: string }) {
@@ -67,6 +71,7 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
   const [expandido, setExpandido] = useState<string | null>(null)
   const [origin, setOrigin] = useState("")
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [busca, setBusca] = useState("")
 
   useEffect(() => setOrigin(window.location.origin), [])
   useEffect(() => {
@@ -136,6 +141,11 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
 
   const totalPrevistos = empresas.reduce((s, e) => s + e.convidadosPrevistos, 0)
   const totalCadastrados = empresas.reduce((s, e) => s + e.cadastrados, 0)
+
+  const termo = normStr(busca.trim())
+  const filtradas = termo
+    ? empresas.filter((e) => normStr(`${e.nome} ${e.cidade} ${e.responsavel} ${e.telefone}`).includes(termo))
+    : empresas
 
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-start", maxWidth: 1180 }}>
@@ -282,8 +292,18 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
       {/* Lista de empresas */}
       <section style={{ flex: "1.5 1 460px", minWidth: 320, display: "flex", flexDirection: "column", gap: 14 }}>
         {empresas.length > 0 && (
+          <input
+            className="pf365"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Pesquisar empresa (nome, cidade, responsável)…"
+            style={{ height: 44, padding: "0 14px", fontSize: 14, border: "1.5px solid #dde3ec", borderRadius: 11, background: "#fff", color: "#1f2733" }}
+          />
+        )}
+
+        {empresas.length > 0 && (
           <div style={{ display: "flex", gap: 18, padding: "2px 4px", fontSize: 12.5, color: "#6a7585", fontWeight: 600 }}>
-            <span>{empresas.length} empresa(s)</span>
+            <span>{termo ? `${filtradas.length} de ${empresas.length}` : empresas.length} empresa(s)</span>
             <span>·</span>
             <span>{totalCadastrados} aluno(s) vinculado(s){totalPrevistos > 0 ? ` de ${totalPrevistos} previsto(s)` : ""}</span>
             {semEmpresa > 0 && <span style={{ marginLeft: "auto", color: "#9aa4b2" }}>{semEmpresa} aluno(s) sem empresa</span>}
@@ -296,8 +316,21 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
             <div style={{ fontSize: 14.5, fontWeight: 700, color: "#41506a" }}>Nenhuma empresa cadastrada</div>
             <p style={{ margin: "7px 0 0", fontSize: 12.5, color: "#8a94a3" }}>Cadastre as empresas que vão participar do treinamento e os convidados de cada uma.</p>
           </div>
+        ) : filtradas.length === 0 ? (
+          <div style={{ background: "#fff", border: "1px dashed #cfd7e2", borderRadius: 16, padding: "40px 24px", textAlign: "center" }}>
+            <div style={{ fontSize: 24, marginBottom: 8 }}>🔍</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#41506a" }}>Nenhuma empresa encontrada</div>
+            <p style={{ margin: "6px 0 0", fontSize: 12.5, color: "#8a94a3" }}>Nada corresponde a “{busca}”.</p>
+            <button
+              type="button"
+              onClick={() => setBusca("")}
+              style={{ marginTop: 12, height: 36, padding: "0 16px", background: "#eef4fc", color: "#04377f", border: "1.5px solid #d6e3f5", borderRadius: 9, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+            >
+              Limpar busca
+            </button>
+          </div>
         ) : (
-          empresas.map((e) => {
+          filtradas.map((e) => {
             const meta = e.convidadosPrevistos
             const pct = meta > 0 ? Math.min(100, Math.round((e.cadastrados / meta) * 100)) : 0
             const atingiu = meta > 0 && e.cadastrados >= meta
