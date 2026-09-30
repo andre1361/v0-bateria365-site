@@ -80,11 +80,12 @@ export default function BateriaLandingPage() {
 
             {/* Imagem para Mobile - Adicionada aqui */}
             <Image
-              src="/images/especialistas.webp"
-              alt="Especialistas Bateria 365"
+              src="/images/especialistas-bateria365.webp"
+              alt="Rafael André e Davi Barbosa, especialistas Bateria 365"
               width={600} // Largura para mobile
-              height={450} // Altura para mobile
-              className="rounded-lg shadow-2xl mx-auto mt-1 mb-6 block lg:hidden object-contain" // Adiciona object-contain
+              height={524} // Altura para mobile
+              className="mx-auto mt-1 mb-6 block lg:hidden object-contain [mask-image:linear-gradient(to_bottom,black_80%,transparent)]"
+              priority
             />
 
             <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">
@@ -115,11 +116,12 @@ export default function BateriaLandingPage() {
           {/* Right Image (55%) - Escondido no Mobile */}
           <div className="lg:w-[55%] flex justify-center mt-12 lg:mt-0 hidden lg:flex">
             <Image
-              src="/images/especialistas.webp"
-              alt="Especialistas Bateria 365"
+              src="/images/especialistas-bateria365.webp"
+              alt="Rafael André e Davi Barbosa, especialistas Bateria 365"
               width={800} // Ajuste a largura conforme necessário para o layout
-              height={600} // Ajuste a altura conforme necessário
-              className="rounded-lg object-contain" // Adiciona object-contain
+              height={699} // Ajuste a altura conforme necessário
+              className="object-contain [mask-image:linear-gradient(to_bottom,black_80%,transparent)]"
+              priority
             />
           </div>
         </div>
