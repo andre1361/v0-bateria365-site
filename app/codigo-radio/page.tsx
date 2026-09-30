@@ -4,9 +4,15 @@ import { REGIAO_COOKIE, ufLiberadaDoToken } from "@/lib/radio-code/regiao"
 import { ConsultaClient } from "./consulta-client"
 import { RegiaoGate } from "./regiao-gate"
 
+const TITULO = "Código do rádio"
+const DESCRICAO = "Trocou a bateria e o rádio pediu código? Recupere o código de desbloqueio do rádio pela placa do veículo."
+
+// Título, descrição e imagem próprios para a pré-visualização do link (a imagem vem de opengraph-image.tsx).
 export const metadata: Metadata = {
-  title: "Consulta de código do rádio",
-  description: "Recupere o código do rádio do veículo pela placa.",
+  title: TITULO,
+  description: DESCRICAO,
+  openGraph: { title: TITULO, description: DESCRICAO, url: "/codigo-radio", siteName: "Bateria 365", locale: "pt_BR", type: "website" },
+  twitter: { card: "summary_large_image", title: TITULO, description: DESCRICAO, images: ["/codigo-radio/opengraph-image"] },
   // Ferramenta interna: não deve ser indexada pelos buscadores.
   robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false } },
 }
