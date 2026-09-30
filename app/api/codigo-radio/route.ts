@@ -3,6 +3,7 @@
 // { ok, codigo, placa_consultada, formato, fallback, tentativas } | { ok:false, erro, tentativas }.
 import { type NextRequest, NextResponse } from "next/server"
 import { consultarCodigoRadio } from "@/lib/radio-code/consulta"
+import { MENSAGEM_REGIAO_BLOQUEADA, REGIAO_COOKIE, ufLiberadaDoToken } from "@/lib/radio-code/regiao"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -37,6 +38,10 @@ function ipDe(req: NextRequest) {
 const NOINDEX = { "X-Robots-Tag": "noindex, nofollow", "Cache-Control": "no-store" }
 
 export async function POST(req: NextRequest) {
+  if (!ufLiberadaDoToken(req.cookies.get(REGIAO_COOKIE)?.value)) {
+    return NextResponse.json({ ok: false, erro: MENSAGEM_REGIAO_BLOQUEADA, tentativas: [] }, { status: 403, headers: NOINDEX })
+  }
+
   if (excedeuLimite(ipDe(req))) {
     return NextResponse.json(
       { ok: false, erro: "Muitas consultas em pouco tempo. Aguarde um minuto e tente de novo.", tentativas: [] },
