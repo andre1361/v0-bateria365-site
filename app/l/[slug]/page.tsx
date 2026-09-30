@@ -4,9 +4,25 @@ import { db } from "@/db"
 import { linkPages } from "@/db/schema"
 import { LinkHub } from "../link-hub"
 
-export const metadata: Metadata = {
-  title: "Links",
-  robots: { index: false, follow: false },
+const NOINDEX = { index: false, follow: false }
+
+// Cada página de links tem título, descrição e imagem próprios na pré-visualização (a imagem vem de opengraph-image.tsx).
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const [page] = await db
+    .select({ titulo: linkPages.titulo, descricao: linkPages.descricao })
+    .from(linkPages)
+    .where(and(eq(linkPages.slug, slug), eq(linkPages.ativo, true)))
+  if (!page) return { title: "Links", robots: NOINDEX }
+  const title = page.titulo
+  const description = page.descricao.trim() || `Todos os links de ${page.titulo} em um só lugar.`
+  return {
+    title,
+    description,
+    robots: NOINDEX,
+    openGraph: { title, description, url: `/l/${slug}`, siteName: "Bateria 365", locale: "pt_BR", type: "website" },
+    twitter: { card: "summary_large_image", title, description, images: [`/l/${slug}/opengraph-image`] },
+  }
 }
 
 export default async function LinkPagePublic({ params }: { params: Promise<{ slug: string }> }) {
