@@ -10,9 +10,10 @@ import { decodificarJis, type JisDecodificado } from "@/lib/corrente-partida/jis
 import { calcularParecer, climaPorUf, type Clima, type Nivel, type Parecer, type Veiculo } from "@/lib/corrente-partida/parecer"
 
 type Aba = "converter" | "comparar"
-type Bateria = { norma: NormaId; texto: string; codigoJis: string }
+// valorDoCodigo: o valor do campo veio da CCA de referência do código JIS, não da etiqueta.
+type Bateria = { norma: NormaId; texto: string; codigoJis: string; valorDoCodigo: boolean }
 
-const BATERIA_VAZIA: Bateria = { norma: NORMA_PADRAO, texto: "", codigoJis: "" }
+const BATERIA_VAZIA: Bateria = { norma: NORMA_PADRAO, texto: "", codigoJis: "", valorDoCodigo: false }
 
 const ABAS: { id: Aba; nome: string }[] = [
   { id: "converter", nome: "Converter" },
@@ -114,7 +115,7 @@ function Converter() {
                   </div>
                   <div className="text-right">
                     <div className="text-[18px] font-extrabold tabular-nums">
-                      {entrada ? "" : "≈ "}
+                      {entrada || min === max ? "" : "≈ "}
                       {arredondar5(faixa.centro)} A
                     </div>
                     {min !== max && <div className="text-[11.5px] tabular-nums text-[#7b8597]">faixa {min}–{max} A</div>}
@@ -173,7 +174,7 @@ function Comparar({ uf }: { uf: string }) {
             ))}
           </div>
           <p className="flex items-center gap-1 text-[11.5px] leading-snug text-[#7b8597]">
-            <MapPin className="h-3 w-3 shrink-0" /> Você está em {uf}: sugerimos {climaDaUf === "frio" ? "Sul / serra (frio)" : "clima quente"}. Troque se o carro roda em serra.
+            <MapPin className="h-3 w-3 shrink-0" /> Você está em {uf}: sugerimos {climaDaUf === "frio" ? "Sul / serra (frio)." : "clima quente. Troque se o carro roda em serra."}
           </p>
         </div>
       </section>
@@ -196,7 +197,20 @@ function CampoBateria({ id, titulo, bateria, onChange }: { id: string; titulo?: 
   // Código JIS conhecido preenche a CCA de referência; o lojista pode corrigir com o valor da etiqueta.
   function trocarCodigo(codigoJis: string) {
     const d = decodificarJis(codigoJis)
-    onChange({ ...bateria, codigoJis, texto: d?.cca ? String(d.cca) : bateria.texto })
+    if (d?.cca && (bateria.texto.trim() === "" || bateria.valorDoCodigo)) {
+      onChange({ ...bateria, codigoJis, texto: String(d.cca), valorDoCodigo: true })
+    } else if (bateria.valorDoCodigo) {
+      // O valor atual veio de um código anterior: não vale para este.
+      onChange({ ...bateria, codigoJis, texto: "", valorDoCodigo: false })
+    } else {
+      onChange({ ...bateria, codigoJis })
+    }
+  }
+
+  // A CCA de referência só vale para JIS: ao sair dela, descarta o valor que veio do código.
+  function trocarNorma(norma: NormaId) {
+    if (norma !== "jis" && bateria.valorDoCodigo) onChange({ ...bateria, norma, texto: "", valorDoCodigo: false })
+    else onChange({ ...bateria, norma })
   }
 
   return (
@@ -207,7 +221,7 @@ function CampoBateria({ id, titulo, bateria, onChange }: { id: string; titulo?: 
         <Label className={ROTULO}>Norma da etiqueta</Label>
         <div role="radiogroup" aria-label={titulo ? `Norma: ${titulo}` : "Norma da etiqueta"} className="flex flex-wrap gap-1.5">
           {NORMAS.map((n) => (
-            <button key={n.id} type="button" role="radio" aria-checked={n.id === bateria.norma} onClick={() => onChange({ ...bateria, norma: n.id })} className={chip(n.id === bateria.norma)}>
+            <button key={n.id} type="button" role="radio" aria-checked={n.id === bateria.norma} onClick={() => trocarNorma(n.id)} className={chip(n.id === bateria.norma)}>
               {n.sigla}
             </button>
           ))}
@@ -243,7 +257,7 @@ function CampoBateria({ id, titulo, bateria, onChange }: { id: string; titulo?: 
             autoComplete="off"
             placeholder="Ex.: 500"
             value={bateria.texto}
-            onChange={(e) => onChange({ ...bateria, texto: e.target.value })}
+            onChange={(e) => onChange({ ...bateria, texto: e.target.value, valorDoCodigo: false })}
             maxLength={7}
             className="h-12 rounded-xl border-[#d9e0ea] pr-10 text-center text-[22px] font-bold"
           />
@@ -278,7 +292,7 @@ function ParecerCard({ parecer }: { parecer: Parecer }) {
       </div>
       <div className="mt-1 text-4xl font-extrabold tabular-nums">{parecer.porcentagem}%</div>
       <p className="text-[12.5px] text-[#41506a]">
-        da corrente da original · {arredondar5(parecer.saeCandidata)} A contra {arredondar5(parecer.saeOriginal)} A (em SAE)
+        da corrente da original · {Math.floor(parecer.saeCandidata)} A contra {Math.ceil(parecer.saeOriginal)} A (em SAE)
       </p>
       <p className="mt-2 text-[14px] leading-relaxed text-[#41506a]">{parecer.explicacao}</p>
       {parecer.motivos.length > 0 && (
@@ -297,7 +311,7 @@ function ComoCalculamos() {
     <details className="mt-3 rounded-xl bg-[#e4eaf3] px-4 py-3 text-[12.5px] leading-relaxed text-[#41506a]">
       <summary className="cursor-pointer font-bold">Como calculamos</summary>
       <div className="mt-2 space-y-2">
-        <p>Tudo é convertido para SAE (CCA a −18 °C). NBR e JIS usam o mesmo ensaio da SAE. Para EN, IEC, DIN e CA/MCA não existe fator oficial: mostramos a faixa das tabelas de mercado.</p>
+        <p>Tudo é convertido para SAE (CCA a −18 °C). NBR e JIS usam o mesmo ensaio da SAE. Para EN, IEC, DIN e CA/MCA não existe fator oficial: mostramos a faixa das tabelas de mercado. Com normas diferentes, comparamos o pior caso da conversão.</p>
         <p>
           A 0 °C a bateria entrega cerca de 25% mais corrente que a −18 °C, e o motor pede menos para girar. Por isso, em clima quente, aceitamos até 10% abaixo da original e, com ressalva, até 20%. Diesel, start-stop e regiões frias (Sul e serras) pedem corrente igual ou maior que a original, como recomenda a Moura.
         </p>

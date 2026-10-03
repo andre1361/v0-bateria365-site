@@ -72,7 +72,7 @@ Entradas: original (valor + norma), candidata (valor + norma), tipo de veículo,
 
 Cálculo da razão, sempre em SAE:
 - mesma norma dos dois lados → `razão = candidata ÷ original` (sem incerteza);
-- normas diferentes → `razão = candidata.min (SAE) ÷ original.centro (SAE)`. A incerteza da conversão nunca favorece a candidata.
+- normas diferentes → `razão = candidata.min (SAE) ÷ original.max (SAE)` (pior caso das duas conversões). A incerteza da conversão nunca favorece a candidata; o aviso de normas diferentes aparece quando algum dos lados tem faixa (min < max).
 
 Tipo de veículo: `flex` (gasolina/flex/etanol, bateria convencional) · `diesel` · `start-stop` (EFB/AGM).
 
@@ -123,7 +123,7 @@ components/regiao-gate.tsx   movido de app/codigo-radio/regiao-gate.tsx, com pro
 ## Tela
 
 **Converter**
-- Seletor de norma de entrada (SAE pré-selecionada) + campo de valor em A; para JIS, opção "Tenho o código" com campo do código.
+- Seletor de norma de entrada (SAE pré-selecionada) + campo de valor em A; para JIS, um campo opcional de código (sempre visível quando JIS está selecionada).
 - Resultado: lista de todas as normas com `≈ valor` e faixa, a de entrada destacada; SAE sempre no topo.
 
 **Comparar**

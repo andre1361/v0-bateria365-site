@@ -45,7 +45,7 @@ export const MOTIVOS = {
   startStop: "Start-stop exige corrente de partida igual ou maior que a original.",
   frio: "Em região fria (Sul e serras) use corrente de partida igual ou maior que a original.",
   tecnologia: "Start-stop exige a mesma tecnologia da original: EFB por EFB (ou AGM), AGM só por AGM.",
-  normas: "Normas diferentes: usamos o menor valor provável da bateria que você tem, para não superestimá-la.",
+  normas: "Normas diferentes: comparamos o pior caso da conversão (menor valor provável da bateria que você tem e maior valor provável da original).",
 }
 
 // Folga para divisões como 540 ÷ 600 não caírem abaixo de 0,9 por ponto flutuante.
@@ -67,11 +67,13 @@ export function calcularParecer({
   clima: Clima
 }): Parecer {
   const mesmaNorma = original.norma === candidata.norma
-  const saeOriginal = paraSae(original.valor, original.norma).centro
+  const faixaOriginal = paraSae(original.valor, original.norma)
   const faixaCandidata = paraSae(candidata.valor, candidata.norma)
-  // Normas diferentes: a incerteza da conversão nunca favorece a candidata.
-  const pessimista = !mesmaNorma && faixaCandidata.min < faixaCandidata.centro
-  const saeCandidata = pessimista ? faixaCandidata.min : faixaCandidata.centro
+  // Normas diferentes: pior caso das duas conversões (candidata no mínimo, original no máximo),
+  // para a incerteza nunca favorecer a candidata.
+  const comIncerteza = !mesmaNorma && (faixaCandidata.min < faixaCandidata.max || faixaOriginal.min < faixaOriginal.max)
+  const saeCandidata = mesmaNorma ? faixaCandidata.centro : faixaCandidata.min
+  const saeOriginal = mesmaNorma ? faixaOriginal.centro : faixaOriginal.max
   const razao = mesmaNorma ? candidata.valor / original.valor : saeCandidata / saeOriginal
   const r = razao + EPS
 
@@ -91,7 +93,7 @@ export function calcularParecer({
     if (r < 0.8) motivos.push(MOTIVOS.muitoAbaixo)
   }
   if (veiculo === "start-stop") motivos.push(MOTIVOS.tecnologia)
-  if (pessimista) motivos.push(MOTIVOS.normas)
+  if (comIncerteza) motivos.push(MOTIVOS.normas)
 
   return {
     nivel,

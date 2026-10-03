@@ -60,26 +60,69 @@ describe("regra exigente", () => {
 })
 
 describe("normas", () => {
+  const cmp = (original: ReturnType<typeof bat>, candidata: ReturnType<typeof bat>, veiculo: Veiculo = "flex", clima: Clima = "tropical") =>
+    calcularParecer({ original, candidata, veiculo, clima })
+
   test("normas diferentes usam o menor valor provável da candidata", () => {
     // EN 560 → SAE 582,4 a 621,6 (centro 602); com o mínimo fica 97% de 600
-    const p = calcularParecer({ original: bat(600), candidata: bat(560, "en"), veiculo: "flex", clima: "tropical" })
+    const p = cmp(bat(600), bat(560, "en"))
     expect(p.nivel).toBe("aceitavel")
     expect(p.saeCandidata).toBeCloseTo(582.4)
     expect(p.saeOriginal).toBe(600)
     expect(p.motivos).toContain(MOTIVOS.normas)
   })
 
+  test("normas diferentes usam o maior valor provável da original", () => {
+    // EN 600 → SAE até 666; 650 ÷ 666 ≈ 0,976, mas diesel não aceita abaixo
+    const p = cmp(bat(600, "en"), bat(650, "nbr"), "diesel")
+    expect(p.saeOriginal).toBeCloseTo(666)
+    expect(p.saeCandidata).toBe(650)
+    expect(p.razao).toBeCloseTo(0.976, 3)
+    expect(p.nivel).toBe("nao-recomendado")
+    expect(p.motivos).toContain(MOTIVOS.normas)
+  })
+
+  test("DIN na original: 524 SAE contra o máximo 546 é aceitável", () => {
+    const p = cmp(bat(300, "din"), bat(524), "flex", "tropical")
+    expect(p.saeOriginal).toBeCloseTo(546)
+    expect(p.razao).toBeCloseTo(0.96, 2)
+    expect(p.nivel).toBe("aceitavel")
+    expect(p.motivos).toContain(MOTIVOS.normas)
+  })
+
   test("mesma norma compara direto", () => {
-    const p = calcularParecer({ original: bat(600, "en"), candidata: bat(600, "en"), veiculo: "flex", clima: "tropical" })
+    const p = cmp(bat(600, "en"), bat(600, "en"))
     expect(p.nivel).toBe("compativel")
     expect(p.razao).toBe(1)
     expect(p.motivos).not.toContain(MOTIVOS.normas)
   })
 
+  test("mesma norma com faixa: 560 contra 600 em EN é 0,9333 sem aviso", () => {
+    const p = cmp(bat(600, "en"), bat(560, "en"))
+    expect(p.razao).toBeCloseTo(0.9333, 4)
+    expect(p.nivel).toBe("aceitavel")
+    expect(p.motivos).not.toContain(MOTIVOS.normas)
+  })
+
   test("SAE contra NBR não penaliza nem avisa", () => {
-    const p = calcularParecer({ original: bat(500), candidata: bat(500, "nbr"), veiculo: "flex", clima: "tropical" })
+    const p = cmp(bat(500), bat(500, "nbr"))
     expect(p.nivel).toBe("compativel")
     expect(p.motivos).not.toContain(MOTIVOS.normas)
+  })
+})
+
+describe("motivos combinados", () => {
+  test("diesel em clima frio cita os dois", () => {
+    const p = parecer(500, 450, "diesel", "frio")
+    expect(p.nivel).toBe("nao-recomendado")
+    expect(p.motivos).toContain(MOTIVOS.diesel)
+    expect(p.motivos).toContain(MOTIVOS.frio)
+  })
+
+  test("diesel muito abaixo cita diesel e mais de 20%", () => {
+    const p = parecer(500, 395, "diesel")
+    expect(p.motivos).toContain(MOTIVOS.diesel)
+    expect(p.motivos).toContain(MOTIVOS.muitoAbaixo)
   })
 })
 
