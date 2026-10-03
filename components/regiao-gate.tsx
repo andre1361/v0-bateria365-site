@@ -13,8 +13,15 @@ type Estado =
   | { etapa: "bloqueado"; mensagem: string; uf: string | null }
   | { etapa: "erro"; mensagem: string }
 
-// Pede a localização do aparelho e libera a consulta se a UF estiver na lista do servidor.
-export function RegiaoGate() {
+type Props = {
+  titulo: string
+  subtitulo: string
+  descricao: string // por que a localização é pedida
+}
+
+// Pede a localização do aparelho e libera a ferramenta se a UF estiver na lista do servidor.
+// O cookie de região vale para todas as ferramentas (código do rádio, corrente de partida).
+export function RegiaoGate({ titulo, subtitulo, descricao }: Props) {
   const router = useRouter()
   const [estado, setEstado] = useState<Estado>({ etapa: "inicio" })
 
@@ -57,8 +64,8 @@ export function RegiaoGate() {
       <div className="mx-auto w-full max-w-md">
         <header className="mb-4 text-center">
           <Image src="/images/logo-bateria365-claro.png" alt="Bateria 365" width={140} height={27} className="mx-auto mb-3 h-7 w-auto" priority />
-          <h1 className="text-[22px] font-extrabold tracking-tight sm:text-2xl">Código do rádio</h1>
-          <p className="mt-1 text-[14px] text-[#5a6579]">Recupere o código de desbloqueio do rádio.</p>
+          <h1 className="text-[22px] font-extrabold tracking-tight sm:text-2xl">{titulo}</h1>
+          <p className="mt-1 text-[14px] text-[#5a6579]">{subtitulo}</p>
         </header>
 
         <section className="rounded-2xl border border-[#e3e8f0] bg-white p-5 text-center shadow-[0_10px_30px_-18px_rgba(16,33,60,.45)]">
@@ -66,9 +73,7 @@ export function RegiaoGate() {
             <MapPin className="h-6 w-6" />
           </div>
           <h2 className="mt-3 text-[17px] font-extrabold">Confirme sua região</h2>
-          <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#5a6579]">
-            A consulta é liberada apenas para as regiões que já receberam o Bateria 365. Permita o acesso à localização para continuar.
-          </p>
+          <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#5a6579]">{descricao}</p>
           <Button type="button" size="lg" onClick={localizar} disabled={localizando} className="mt-4 h-11 w-full rounded-xl text-[15px] font-bold">
             {localizando ? <><Loader2 className="animate-spin" /> Verificando sua região…</> : <><MapPin /> {estado.etapa === "inicio" ? "Permitir localização" : "Tentar de novo"}</>}
           </Button>
@@ -89,7 +94,7 @@ export function RegiaoGate() {
               <MapPinOff className="h-4 w-4" /> Localização bloqueada
             </div>
             <p className="mt-2 text-[14px] leading-relaxed text-[#41506a]">
-              Sem a localização não conseguimos liberar a consulta. Toque no cadeado ao lado do endereço do site, permita a localização e tente de novo.
+              Sem a localização não conseguimos liberar o acesso. Toque no cadeado ao lado do endereço do site, permita a localização e tente de novo.
             </p>
           </section>
         )}
