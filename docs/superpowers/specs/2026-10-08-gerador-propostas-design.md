@@ -62,7 +62,7 @@ Exemplo: N = 1, passagens POA R$ 1.500 e SJP R$ 1.800:
 ## Dados (Drizzle)
 
 ### `proposal_settings` (uma linha)
-`id`, `hotelDiaria`, `alimentacaoDia`, `uberFixo`, `honorario` (centavos), `acrescimoPct` (inteiro, em centésimos de %: 0 = 0%, 650 = 6,5%), `validadeDias`, `updatedAt`. Criada pela migração com os padrões acima.
+`id` (sempre `padrao`), `hotelDiaria`, `alimentacaoDia`, `uberFixo`, `honorario` (centavos), `acrescimoPct` (inteiro, em centésimos de %: 0 = 0%, 650 = 6,5%), `validadeDias`, `updatedAt`. Sem linha gravada, valem os padrões acima, que ficam em `lib/proposta/padroes.ts`. A tela de configurações grava a linha com upsert.
 
 ### `proposals`
 - `id`, `distributorId` (FK `users`, cascade), `slug` (único)
@@ -98,7 +98,7 @@ Exemplo: N = 1, passagens POA R$ 1.500 e SJP R$ 1.800:
 Novo item **"Propostas"** na barra lateral do super admin.
 
 **Lista** — `/parceiro365/admin/propostas`
-- Tabela com distribuidor, destino, data do treinamento, total, status efetivo (cores diferentes) e validade. Propostas aceitas têm link para o evento.
+- Tabela com distribuidor, destino, data do treinamento, total, status efetivo (cores diferentes) e validade. Propostas aceitas mostram "evento criado". Os eventos ficam no escopo do distribuidor, e o admin os vê entrando na conta dele.
 - Botões "Nova proposta" e "Configurações" (`/parceiro365/admin/propostas/configuracoes`, edita `proposal_settings`).
 
 **Editor** — `/parceiro365/admin/propostas/[id]` (`nova` cria um rascunho)
@@ -154,6 +154,6 @@ Checagem no navegador, no fim: criar uma proposta de ponta a ponta, abrir o link
 
 ## Implantação
 
-- Migração Drizzle com as 3 tabelas, o enum de status e a linha de `proposal_settings`.
+- Migração Drizzle com as 3 tabelas e o enum de status.
 - `SERPAPI_API_KEY` na Vercel (Production e Preview). Sem a chave, o restante funciona com valor manual.
 - Branch `feat/gerador-propostas`, PR e merge na `main`.
