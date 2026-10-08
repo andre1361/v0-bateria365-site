@@ -6,17 +6,9 @@ import { and, eq } from "drizzle-orm"
 import { db } from "@/db"
 import { events } from "@/db/schema"
 import { requireUser } from "../../guard"
+import { slugify } from "@/lib/slug"
 
 export type EventState = { error?: string; ok?: string }
-
-function slugify(s: string) {
-  return (s || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(new RegExp("[\\u0300-\\u036f]", "g"), "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
-}
 
 function readFields(formData: FormData) {
   return {
