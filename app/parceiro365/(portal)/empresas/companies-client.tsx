@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect, useState } from "react"
 import { saveCompany, deleteCompany, addStudentToCompany, removeStudent, assignSeller, updateSeller, deleteSeller, type CompanyState } from "./actions"
-import { maskPhone } from "@/lib/phone"
+import { maskPhone, whatsappPhone } from "@/lib/phone"
+import { mensagemAgradecimento } from "@/lib/agradecimento"
 
 type Aluno = { id: string; nome: string; email: string; telefone: string }
 type Seller = { id: string; nome: string }
@@ -71,6 +72,7 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
   const [expandido, setExpandido] = useState<string | null>(null)
   const [origin, setOrigin] = useState("")
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [agradecidoId, setAgradecidoId] = useState<string | null>(null)
   const [busca, setBusca] = useState("")
 
   useEffect(() => setOrigin(window.location.origin), [])
@@ -96,8 +98,7 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
   // Abre o WhatsApp (web/app) com a mensagem de convite pronta para a empresa.
   const enviarWhats = (e: Empresa) => {
     if (!evento) return
-    const digits = (e.telefone || "").replace(/\D/g, "")
-    const phone = digits.length === 10 || digits.length === 11 ? "55" + digits : digits
+    const phone = whatsappPhone(e.telefone)
     if (!phone) return
     const link = `${origin}/parceiro365/convite/${evento.slug}/equipe/${e.id}`
     const quando = [evento.dataFmt, evento.horario].filter(Boolean).join(" às ")
@@ -118,6 +119,25 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
     linhas.push("", "Garanta a presença da sua equipe pelo link abaixo:", link)
     const url = `https://wa.me/${phone}?text=${encodeURIComponent(linhas.join("\n"))}`
     window.open(url, "_blank", "noopener,noreferrer")
+  }
+
+  // Agradecimento pela participação no treinamento Bateria 365: abre o WhatsApp da empresa com a
+  // mensagem pronta; sem telefone, copia a mensagem para enviar por outro canal.
+  const agradecer = async (e: Empresa) => {
+    const texto = mensagemAgradecimento({ responsavel: e.responsavel, distribuidor: distribuidorNome, vendedor: e.sellerNome })
+    const phone = whatsappPhone(e.telefone)
+    if (phone) {
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(texto)}`, "_blank", "noopener,noreferrer")
+    } else {
+      try {
+        await navigator.clipboard?.writeText(texto)
+      } catch {
+        window.prompt("Copie a mensagem de agradecimento:", texto)
+        return
+      }
+    }
+    setAgradecidoId(e.id)
+    setTimeout(() => setAgradecidoId((c) => (c === e.id ? null : c)), 2200)
   }
 
   const set = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -365,6 +385,14 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
                       <span aria-hidden>📲</span> WhatsApp
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => agradecer(e)}
+                    title={e.telefone ? "Abrir o WhatsApp com uma mensagem de agradecimento pela participação no treinamento" : "Copiar uma mensagem de agradecimento pela participação no treinamento"}
+                    style={{ height: 30, padding: "0 12px", background: agradecidoId === e.id ? "#0f7a43" : "#eafaf0", color: agradecidoId === e.id ? "#fff" : "#0f7a43", border: `1.5px solid ${agradecidoId === e.id ? "#0f7a43" : "#bfe8cf"}`, borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 5 }}
+                  >
+                    {agradecidoId === e.id ? (e.telefone ? "✓ Aberto!" : "✓ Copiado!") : <><span aria-hidden>🙏</span> Agradecer</>}
+                  </button>
                   <button
                     type="button"
                     onClick={() => editar(e)}
