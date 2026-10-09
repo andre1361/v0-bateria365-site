@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { randomUUID } from "crypto"
-import { and, eq, ne } from "drizzle-orm"
+import { and, eq, inArray, ne } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { db } from "@/db"
 import { proposalSettings, proposals, users } from "@/db/schema"
@@ -55,7 +55,13 @@ async function gravar(id: string | null, e: EntradaProposta): Promise<{ error?: 
   }
 
   if (id) {
-    await db.update(proposals).set(valores).where(eq(proposals.id, id))
+    // Condicional: se a proposta foi aceita entre a leitura acima e agora, não sobrescreve.
+    const atualizado = await db
+      .update(proposals)
+      .set(valores)
+      .where(and(eq(proposals.id, id), inArray(proposals.status, ["rascunho", "enviada"])))
+      .returning({ id: proposals.id })
+    if (atualizado.length === 0) return { error: "Esta proposta não pode mais ser editada." }
     return { id }
   }
   const [novo] = await db.insert(proposals).values(valores).returning({ id: proposals.id })
@@ -93,10 +99,12 @@ export async function gerarLink(
   const agora = new Date()
   const validaAte = calcularValidade(agora, v.valor.validadeDias)
 
-  await db
+  const enviada = await db
     .update(proposals)
     .set({ slug, chavePlain: chave, chaveHash, status: "enviada", enviadaEm: agora, validaAte, updatedAt: agora })
-    .where(eq(proposals.id, g.id))
+    .where(and(eq(proposals.id, g.id), inArray(proposals.status, ["rascunho", "enviada"])))
+    .returning({ id: proposals.id })
+  if (enviada.length === 0) return { error: "Esta proposta não pode mais ser editada." }
 
   revalidatePath(LISTA)
   revalidatePath(`/parceiro365/proposta/${slug}`)
