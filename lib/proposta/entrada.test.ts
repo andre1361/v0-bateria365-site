@@ -51,6 +51,10 @@ describe("recusa dados adulterados", () => {
     expect(erro({ ...base(), parametros: { ...PADROES.parametros, honorario: "12000" } })).toBe("Revise os valores de custo.")
     expect(erro({ ...base(), parametros: { ...PADROES.parametros, acrescimoPct: 10001 } })).toBe("Revise os valores de custo.")
   })
+  test("custo acima de R$ 500 mil é recusado (evita estourar o int4 do total)", () => {
+    expect(erro({ ...base(), parametros: { ...PADROES.parametros, honorario: 50_000_001 } })).toBe("Revise os valores de custo.")
+    expect(validarEntrada({ ...base(), parametros: { ...PADROES.parametros, honorario: 50_000_000 } }, HOJE, false).ok).toBe(true)
+  })
   test("voo com preço negativo ou modo desconhecido", () => {
     expect(erro({ ...base(), voos: { poa: { modo: "serpapi", preco: -100 } } })).toBe("Voo de Porto Alegre inválido.")
     expect(erro({ ...base(), voos: { sjp: { modo: "grátis", preco: 0 } } })).toBe("Voo de São José do Rio Preto inválido.")

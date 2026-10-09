@@ -18,7 +18,7 @@ export type EntradaProposta = {
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-const MAX_VALOR = 100_000_000 // R$ 1 milhão
+const MAX_VALOR = 50_000_000 // R$ 500 mil (o total não pode estourar o int4)
 const MAX_PASSAGEM = 10_000_000 // R$ 100 mil
 
 const inteiro = (v: unknown, min: number, max: number): number | null =>

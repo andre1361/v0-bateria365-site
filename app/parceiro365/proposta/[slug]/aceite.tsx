@@ -6,7 +6,7 @@ import { aceitarProposta } from "./actions"
 
 const base: React.CSSProperties = { height: 48, padding: "0 22px", borderRadius: 11, fontSize: 15, fontWeight: 700, cursor: "pointer" }
 
-export function Aceite({ slug }: { slug: string }) {
+export function Aceite({ slug, visto }: { slug: string; visto: string }) {
   const router = useRouter()
   const [confirmando, setConfirmando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -15,7 +15,7 @@ export function Aceite({ slug }: { slug: string }) {
   const confirmar = () =>
     iniciar(async () => {
       setErro(null)
-      const r = await aceitarProposta(slug)
+      const r = await aceitarProposta(slug, visto)
       if (r.error) setErro(r.error)
       router.refresh()
     })

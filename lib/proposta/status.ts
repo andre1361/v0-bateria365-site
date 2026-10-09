@@ -1,3 +1,5 @@
+import { dataISONoBrasil, somarDiasISO } from "./formato"
+
 export type StatusGravado = "rascunho" | "enviada" | "aceita" | "cancelada"
 export type StatusEfetivo = StatusGravado | "expirada"
 
@@ -21,4 +23,16 @@ export const ROTULO_STATUS: Record<StatusEfetivo, { texto: string; cor: string; 
 
 export function calcularValidade(agora: Date, dias: number): Date {
   return new Date(agora.getTime() + dias * 24 * 60 * 60 * 1000)
+}
+
+// Fim do dia (23:59:59, São Paulo, UTC−3 fixo) de uma data ISO.
+const fimDoDia = (iso: string): Date => new Date(`${iso}T23:59:59-03:00`)
+
+// Validade efetiva: o menor entre "hoje + dias" e o dia anterior à ida, sempre até o
+// fim do dia. Retorna null se esse limite já passou (viagem cedo demais).
+export function validadeEfetiva(agora: Date, dias: number, idaISO: string): Date | null {
+  const porDias = fimDoDia(somarDiasISO(dataISONoBrasil(agora), dias))
+  const antesDaIda = fimDoDia(somarDiasISO(idaISO, -1))
+  const v = porDias.getTime() <= antesDaIda.getTime() ? porDias : antesDaIda
+  return v.getTime() > agora.getTime() ? v : null
 }

@@ -13,7 +13,7 @@ import { UUID_RE, validarEntrada, type EntradaProposta } from "@/lib/proposta/en
 import { dataISONoBrasil, isoValida, parseBRL, parsePercentual } from "@/lib/proposta/formato"
 import { ORIGENS, type OrigemId } from "@/lib/proposta/origens"
 import type { ResultadoBusca } from "@/lib/proposta/serpapi"
-import { calcularValidade, podeEditar, statusEfetivo } from "@/lib/proposta/status"
+import { podeEditar, statusEfetivo, validadeEfetiva } from "@/lib/proposta/status"
 import { slugify } from "@/lib/slug"
 import { requireAdmin } from "../../../guard"
 import { buscarVoosComCache } from "./server"
@@ -23,10 +23,11 @@ const LISTA = "/parceiro365/admin/propostas"
 // Grava rascunho/alterações. O total é sempre recalculado aqui, nunca vem do navegador.
 async function gravar(id: string | null, e: EntradaProposta): Promise<{ error?: string; id?: string }> {
   if (id && !UUID_RE.test(id)) return { error: "Proposta não encontrada." }
+  // Proposta nova só pode ser de um distribuidor ativo (a existente mantém o seu).
   const [dist] = await db
     .select({ id: users.id })
     .from(users)
-    .where(and(eq(users.id, e.distributorId), eq(users.role, "distribuidor")))
+    .where(and(eq(users.id, e.distributorId), eq(users.role, "distribuidor"), ...(id ? [] : [eq(users.ativo, true)])))
   if (!dist) return { error: "Distribuidor não encontrado." }
 
   if (id) {
@@ -70,7 +71,14 @@ async function gravar(id: string | null, e: EntradaProposta): Promise<{ error?: 
 
 export async function salvarProposta(id: string | null, raw: unknown): Promise<{ error?: string; id?: string }> {
   await requireAdmin()
-  const v = validarEntrada(raw, dataISONoBrasil(new Date()), false)
+  // Proposta já enviada (válida ou expirada) só pode ser salva completa: senão o link
+  // continuaria no ar com voos zerados.
+  let exigirCompleta = false
+  if (id && UUID_RE.test(id)) {
+    const [atual] = await db.select({ status: proposals.status }).from(proposals).where(eq(proposals.id, id))
+    exigirCompleta = atual?.status === "enviada"
+  }
+  const v = validarEntrada(raw, dataISONoBrasil(new Date()), exigirCompleta)
   if (!v.ok) return { error: v.erro }
   const r = await gravar(id, v.valor)
   revalidatePath(LISTA)
@@ -85,6 +93,10 @@ export async function gerarLink(
   await requireAdmin()
   const v = validarEntrada(raw, dataISONoBrasil(new Date()), true)
   if (!v.ok) return { error: v.erro }
+  // A validade nunca passa do dia anterior à ida; sem margem, nem grava.
+  const agora = new Date()
+  const validaAte = validadeEfetiva(agora, v.valor.validadeDias, datasViagem(v.valor.dataInicioISO, v.valor.duracaoDias).idaISO)
+  if (!validaAte) return { error: "A viagem é cedo demais para enviar a proposta — escolha uma data mais adiante." }
   const g = await gravar(id, v.valor)
   if (g.error || !g.id) return g
 
@@ -96,8 +108,6 @@ export async function gerarLink(
     p.slug ?? `${slugify(`${p.destinoCidade}-treinamento`) || "treinamento"}-${randomUUID().replace(/-/g, "").slice(0, 6)}`
   const chave = p.chavePlain ?? gerarChave()
   const chaveHash = p.chaveHash ?? (await bcrypt.hash(chave, 10))
-  const agora = new Date()
-  const validaAte = calcularValidade(agora, v.valor.validadeDias)
 
   const enviada = await db
     .update(proposals)
@@ -165,6 +175,9 @@ export async function salvarConfiguracoes(_prev: ConfigState, formData: FormData
     return { error: "Revise os valores — use o formato 1.500,00 (e 6,5 no acréscimo)." }
   }
   if (!Number.isInteger(validadeDias) || validadeDias < 1 || validadeDias > 60) return { error: "A validade deve ser de 1 a 60 dias." }
+  if ([hotelDiaria, alimentacaoDia, uberFixo, honorario].some((v) => v > 50_000_000)) {
+    return { error: "Revise os valores — use o formato 1.500,00 (e 6,5 no acréscimo)." }
+  }
 
   const valores = { hotelDiaria, alimentacaoDia, uberFixo, honorario, acrescimoPct, validadeDias, updatedAt: new Date() }
   await db
