@@ -49,8 +49,8 @@ export function ColunaVoos({
           {resultado?.ok && resultado.doCache && <p style={{ margin: "0 0 8px", fontSize: 11.5, color: "#8792a2" }}>Resultado guardado das últimas 6h.</p>}
 
           {resultado?.ok &&
-            resultado.opcoes.map((o) => (
-              <label key={`${o.partida}-${o.preco}`} style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 10px", minHeight: 44, marginBottom: 6, border: `1.5px solid ${mesmoVoo(escolhido, o) ? "#04377f" : "#e6eaf1"}`, borderRadius: 10, cursor: editavel ? "pointer" : "default", fontSize: 13 }}>
+            resultado.opcoes.map((o, i) => (
+              <label key={`${o.companhia}-${o.partida}-${o.preco}-${i}`} style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 10px", minHeight: 44, marginBottom: 6, border: `1.5px solid ${mesmoVoo(escolhido, o) ? "#04377f" : "#e6eaf1"}`, borderRadius: 10, cursor: editavel ? "pointer" : "default", fontSize: 13 }}>
                 <input type="radio" name={grupo} disabled={!editavel} checked={mesmoVoo(escolhido, o)} onChange={() => {
                     setModoManual(false)
                     onEscolher({ modo: "serpapi", ...o })

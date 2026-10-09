@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation"
-import { asc, eq } from "drizzle-orm"
+import { and, asc, eq, or } from "drizzle-orm"
 import { db } from "@/db"
 import { proposals, users } from "@/db/schema"
 import { UUID_RE } from "@/lib/proposta/entrada"
@@ -13,10 +13,16 @@ export default async function EditorPropostaPage({ params }: { params: Promise<{
   await requireAdmin()
   const { id } = await params
 
+  // Só distribuidores ativos — mais o da própria proposta, mesmo se estiver inativo.
+  let propostaDistId: string | null = null
+  if (id !== "nova" && UUID_RE.test(id)) {
+    const [d] = await db.select({ d: proposals.distributorId }).from(proposals).where(eq(proposals.id, id))
+    propostaDistId = d?.d ?? null
+  }
   const distribuidores = await db
     .select({ id: users.id, nome: users.nome, cidade: users.cidade })
     .from(users)
-    .where(eq(users.role, "distribuidor"))
+    .where(and(eq(users.role, "distribuidor"), or(eq(users.ativo, true), ...(propostaDistId ? [eq(users.id, propostaDistId)] : []))))
     .orderBy(asc(users.nome))
 
   let inicial: PropostaInicial

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { aeroportoPorIata, sugerirAeroporto } from "@/lib/proposta/aeroportos"
@@ -46,11 +46,14 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
   const [pendente, iniciar] = useTransition()
   const [erro, setErro] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
+  const [confirmandoCancelar, setConfirmandoCancelar] = useState(false)
 
   const [distributorId, setDistributorId] = useState(inicial.distributorId)
   const [destinoIata, setDestinoIata] = useState(inicial.destinoIata)
   const [dataInicioISO, setDataInicioISO] = useState(inicial.dataInicioISO)
-  const [duracaoDias, setDuracaoDias] = useState(inicial.duracaoDias)
+  // Texto livre enquanto digita; o número usado nos cálculos é derivado (1 a 10).
+  const [duracaoTexto, setDuracaoTexto] = useState(String(inicial.duracaoDias))
+  const duracaoDias = Math.min(10, Math.max(1, Math.floor(Number(duracaoTexto) || 1)))
   const [custos, setCustos] = useState<Record<ChaveCusto | "acrescimoPct", string>>({
     hotelDiaria: formatarValorCampo(inicial.parametros.hotelDiaria),
     alimentacaoDia: formatarValorCampo(inicial.parametros.alimentacaoDia),
@@ -85,6 +88,9 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
   const datas = dataInicioISO ? datasViagem(dataInicioISO, duracaoDias) : null
   const distribuidor = distribuidores.find((d) => d.id === distributorId)
   const rot = ROTULO_STATUS[inicial.status]
+  // Proposta já enviada só pode ser salva completa (senão o link ficaria com voos zerados).
+  const exigeCompleta = inicial.status === "enviada" || inicial.status === "expirada"
+  const salvarBloqueado = exigeCompleta && !calculo.completo
 
   // Destino, data ou duração novos invalidam os preços buscados (os manuais ficam).
   function mudouViagem() {
@@ -140,6 +146,15 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
     }
   }
 
+  // Renovar (expirada): refaz a busca de voos uma única vez ao abrir.
+  const buscouAoAbrir = useRef(false)
+  useEffect(() => {
+    if (buscouAoAbrir.current) return
+    buscouAoAbrir.current = true
+    if (inicial.status === "expirada" && destinoIata && dataInicioISO) void buscar(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   function aposGravar(id?: string) {
     if (!inicial.id && id) router.replace(`/parceiro365/admin/propostas/${id}`)
     else router.refresh()
@@ -174,6 +189,7 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
     if (!inicial.id) return
     const id = inicial.id
     iniciar(async () => {
+      setConfirmandoCancelar(false)
       const r = await cancelarProposta(id)
       if (r.error) return setErro(r.error)
       router.refresh()
@@ -200,7 +216,7 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
           <label htmlFor="distribuidor" style={label}>
             Distribuidor
           </label>
-          <select id="distribuidor" className="pf365" disabled={!editavel} value={distributorId} onChange={(e) => trocarDistribuidor(e.target.value)} style={field}>
+          <select id="distribuidor" className="pf365" disabled={!editavel || !!inicial.slug} value={distributorId} onChange={(e) => trocarDistribuidor(e.target.value)} style={field}>
             <option value="">Escolha…</option>
             {distribuidores.map((d) => (
               <option key={d.id} value={d.id}>
@@ -218,6 +234,7 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
             valor={destinoIata}
             disabled={!editavel}
             onChange={(iata) => {
+              if (iata === destinoIata) return
               setDestinoIata(iata)
               mudouViagem()
             }}
@@ -252,11 +269,14 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
                 min={1}
                 max={10}
                 disabled={!editavel}
-                value={duracaoDias}
+                value={duracaoTexto}
                 onChange={(e) => {
-                  setDuracaoDias(Math.min(10, Math.max(1, Math.floor(Number(e.target.value) || 1))))
-                  mudouViagem()
+                  const texto = e.target.value
+                  setDuracaoTexto(texto)
+                  const novo = Math.min(10, Math.max(1, Math.floor(Number(texto) || 1)))
+                  if (novo !== duracaoDias) mudouViagem()
                 }}
+                onBlur={() => setDuracaoTexto(String(duracaoDias))}
                 style={field}
               />
             </div>
@@ -339,16 +359,27 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
 
         {editavel && (
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button type="button" onClick={salvar} disabled={pendente} style={botaoSecundario}>
+            <button type="button" onClick={salvar} disabled={pendente || salvarBloqueado} style={{ ...botaoSecundario, opacity: salvarBloqueado ? 0.6 : 1 }}>
               {inicial.status === "rascunho" ? "Salvar rascunho" : "Salvar alterações"}
             </button>
+            {salvarBloqueado && <span style={{ alignSelf: "center", fontSize: 12.5, color: "#9a6700", fontWeight: 600 }}>Escolha as passagens das duas origens antes de salvar.</span>}
             <button type="button" onClick={enviar} disabled={pendente} style={{ ...botaoPrimario, opacity: pendente ? 0.75 : 1 }}>
               {pendente ? "Gravando…" : rotuloEnviar}
             </button>
-            {inicial.id && (
-              <button type="button" onClick={cancelar} disabled={pendente} style={{ ...botaoSecundario, color: "#b4232a", borderColor: "#f1c4c4", marginLeft: "auto" }}>
+            {inicial.id && !confirmandoCancelar && (
+              <button type="button" onClick={() => setConfirmandoCancelar(true)} disabled={pendente} style={{ ...botaoSecundario, color: "#b4232a", borderColor: "#f1c4c4", marginLeft: "auto" }}>
                 Cancelar proposta
               </button>
+            )}
+            {inicial.id && confirmandoCancelar && (
+              <div style={{ display: "flex", gap: 10, marginLeft: "auto", flexWrap: "wrap" }}>
+                <button type="button" onClick={cancelar} disabled={pendente} style={{ ...botaoSecundario, color: "#fff", background: "#b4232a", borderColor: "#b4232a", opacity: pendente ? 0.75 : 1 }}>
+                  {pendente ? "Cancelando…" : "Confirmar cancelamento"}
+                </button>
+                <button type="button" onClick={() => setConfirmandoCancelar(false)} disabled={pendente} style={botaoSecundario}>
+                  Voltar
+                </button>
+              </div>
             )}
           </div>
         )}

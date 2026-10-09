@@ -93,7 +93,7 @@ function Conteudo({ p, nome, cidade }: { p: typeof proposals.$inferSelect; nome:
         {validade && <p style={{ margin: 0, fontSize: 13, color: "#6a7585" }}>Proposta válida até {validade}.</p>}
       </div>
 
-      {status === "enviada" && <Aceite slug={p.slug as string} />}
+      {status === "enviada" && <Aceite slug={p.slug as string} visto={p.updatedAt.toISOString()} />}
       {status === "expirada" && (
         <p style={{ marginTop: 16, padding: 14, background: "#fff7ed", border: "1px solid #f4d9ae", borderRadius: 12, color: "#9a6700", fontSize: 14, fontWeight: 600, textAlign: "center" }}>
           Proposta expirada — fale com a equipe Bateria 365 para renovar.
@@ -101,7 +101,8 @@ function Conteudo({ p, nome, cidade }: { p: typeof proposals.$inferSelect; nome:
       )}
       {status === "aceita" && (
         <p style={{ marginTop: 16, padding: 14, background: "#e7f6ec", border: "1px solid #bfe3cb", borderRadius: 12, color: "#1e7b3c", fontSize: 14, fontWeight: 600, textAlign: "center" }}>
-          Proposta aceita{p.aceitaEm ? ` em ${formatarDataISO(dataISONoBrasil(p.aceitaEm))}` : ""}. Seu treinamento já está na agenda.
+          Proposta aceita{p.aceitaEm ? ` em ${formatarDataISO(dataISONoBrasil(p.aceitaEm))}` : ""}.{" "}
+          {p.eventId ? "Seu treinamento já está na agenda." : "A equipe Bateria 365 vai confirmar a agenda."}
         </p>
       )}
       <div style={{ marginTop: 14, textAlign: "center" }}>
