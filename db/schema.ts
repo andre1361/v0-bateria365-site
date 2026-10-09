@@ -1,4 +1,6 @@
 import { pgTable, pgEnum, text, timestamp, boolean, uuid, jsonb, integer } from "drizzle-orm/pg-core"
+import type { Parametros, Voos } from "../lib/proposta/calculo"
+import type { OpcaoVoo } from "../lib/proposta/serpapi"
 
 // Papéis de usuário do portal.
 export const roleEnum = pgEnum("role", ["super_admin", "distribuidor"])
@@ -169,6 +171,58 @@ export const linkPages = pgTable("link_pages", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
+// Propostas de treinamento (só o super admin cria). Valores em centavos.
+export const proposalStatusEnum = pgEnum("proposal_status", ["rascunho", "enviada", "aceita", "cancelada"])
+
+// Padrões editáveis das propostas (uma linha, id "padrao"). Sem linha, valem os de lib/proposta/padroes.ts.
+export const proposalSettings = pgTable("proposal_settings", {
+  id: text("id").primaryKey().default("padrao"),
+  hotelDiaria: integer("hotel_diaria").notNull(),
+  alimentacaoDia: integer("alimentacao_dia").notNull(),
+  uberFixo: integer("uber_fixo").notNull(),
+  honorario: integer("honorario").notNull(),
+  acrescimoPct: integer("acrescimo_pct").notNull().default(0),
+  validadeDias: integer("validade_dias").notNull().default(10),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const proposals = pgTable("proposals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  distributorId: uuid("distributor_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  // Gerados ao enviar pela primeira vez; ficam iguais ao renovar.
+  slug: text("slug").unique(),
+  chaveHash: text("chave_hash"),
+  // Chave em texto para o admin reenviar por WhatsApp (como users.senhaPlain).
+  chavePlain: text("chave_plain"),
+  destinoIata: text("destino_iata").notNull().default(""),
+  destinoCidade: text("destino_cidade").notNull().default(""),
+  dataInicioISO: text("data_inicio_iso").notNull().default(""),
+  duracaoDias: integer("duracao_dias").notNull().default(1),
+  idaISO: text("ida_iso").notNull().default(""),
+  voltaISO: text("volta_iso").notNull().default(""),
+  // Cópia dos custos usados nesta proposta: mudar os padrões não altera propostas antigas.
+  parametros: jsonb("parametros").$type<Parametros>().notNull(),
+  validadeDias: integer("validade_dias").notNull().default(10),
+  voos: jsonb("voos").$type<Voos>().notNull().default({}),
+  total: integer("total").notNull().default(0),
+  status: proposalStatusEnum("status").notNull().default("rascunho"),
+  validaAte: timestamp("valida_ate", { withTimezone: true }),
+  enviadaEm: timestamp("enviada_em", { withTimezone: true }),
+  aceitaEm: timestamp("aceita_em", { withTimezone: true }),
+  eventId: uuid("event_id").references(() => events.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Cache das buscas na SerpApi (cada busca gasta crédito). Vale por 6h.
+export const flightSearchCache = pgTable("flight_search_cache", {
+  chave: text("chave").primaryKey(),
+  resultados: jsonb("resultados").$type<OpcaoVoo[]>().notNull(),
+  buscadoEm: timestamp("buscado_em", { withTimezone: true }).notNull().defaultNow(),
+})
+
 export type User = typeof users.$inferSelect
 export type Seller = typeof sellers.$inferSelect
 export type Company = typeof companies.$inferSelect
@@ -180,3 +234,5 @@ export type Raffle = typeof raffles.$inferSelect
 export type Event = typeof events.$inferSelect
 export type Rsvp = typeof rsvps.$inferSelect
 export type LinkPage = typeof linkPages.$inferSelect
+export type Proposal = typeof proposals.$inferSelect
+export type ProposalSettings = typeof proposalSettings.$inferSelect

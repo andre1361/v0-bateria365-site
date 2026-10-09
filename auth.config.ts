@@ -32,11 +32,12 @@ export const authConfig = {
       const isLogin = pathname === "/parceiro365/login"
       const isEmitir = pathname.startsWith("/parceiro365/emitir")
       const isConvite = pathname.startsWith("/parceiro365/convite")
+      const isProposta = pathname.startsWith("/parceiro365/proposta/")
       const role = (auth?.user as any)?.role
       const logged = !!auth?.user
 
       // Rotas públicas dentro de /parceiro365
-      if (isEmitir || isConvite) return true
+      if (isEmitir || isConvite || isProposta) return true
       if (isLogin) {
         if (logged) return Response.redirect(new URL("/parceiro365", request.nextUrl))
         return true
