@@ -7,3 +7,9 @@ export function maskPhone(value: string): string {
   if (v.length <= 10) return `(${v.slice(0, 2)}) ${v.slice(2, 6)}-${v.slice(6)}`
   return `(${v.slice(0, 2)}) ${v.slice(2, 7)}-${v.slice(7)}`
 }
+
+// Telefone no formato do wa.me: só dígitos, com DDI 55 quando vier só DDD + número.
+export function whatsappPhone(value: string): string {
+  const digits = (value || "").replace(/\D/g, "")
+  return digits.length === 10 || digits.length === 11 ? "55" + digits : digits
+}
