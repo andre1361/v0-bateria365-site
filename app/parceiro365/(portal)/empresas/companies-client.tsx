@@ -128,6 +128,7 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
       empresa: e.nome,
       responsavel: e.responsavel,
       distribuidor: distribuidorNome,
+      vendedor: e.sellerNome,
       treinamento: evento?.titulo,
       data: evento?.dataFmt,
       participantes: e.confirmados || e.cadastrados,
