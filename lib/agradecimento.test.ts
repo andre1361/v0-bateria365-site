@@ -4,39 +4,24 @@ import { whatsappPhone } from "./phone"
 
 describe("mensagemAgradecimento", () => {
   test("assina com o vendedor da empresa e a distribuidora", () => {
-    const msg = mensagemAgradecimento({
-      empresa: "Bateria Sul",
-      responsavel: "Fábio",
-      distribuidor: "Distribuidora X",
-      vendedor: "Carlos",
-      treinamento: "Treinamento Moura",
-      data: "10/10/2026",
-      participantes: 3,
-    })
+    const msg = mensagemAgradecimento({ responsavel: "Fábio", distribuidor: "Distribuidora X", vendedor: "Carlos" })
     expect(msg).toStartWith("Olá, Fábio! Tudo bem?\nAqui é Carlos, da equipe Distribuidora X.")
-    expect(msg).toContain('participação da Bateria Sul no treinamento "Treinamento Moura" em 10/10/2026!')
-    expect(msg).toContain("presença dos 3 participantes")
+    expect(msg).toContain("participação de vocês no treinamento Bateria 365!")
     expect(msg).toContain("Quando nossos parceiros crescem, a gente cresce junto.")
     expect(msg).toEndWith("Um abraço,\nCarlos · Distribuidora X")
   })
 
   test("sem vendedor, fala como equipe da distribuidora", () => {
-    const msg = mensagemAgradecimento({ empresa: "Loja Y", distribuidor: "Distribuidora X" })
+    const msg = mensagemAgradecimento({ distribuidor: "Distribuidora X" })
     expect(msg).toContain("Aqui é a equipe Distribuidora X.")
     expect(msg).toEndWith("Um abraço,\nEquipe Distribuidora X")
   })
 
   test("funciona sem nenhum dado opcional", () => {
-    const msg = mensagemAgradecimento({ empresa: "Loja Y" })
+    const msg = mensagemAgradecimento({})
     expect(msg).toStartWith("Olá! Tudo bem?\nAqui é a equipe do seu distribuidor Moura.")
-    expect(msg).toContain("participação da Loja Y no treinamento! 🙏")
-    expect(msg).not.toContain("presença")
     expect(msg).not.toContain("undefined")
     expect(msg).toEndWith("Um abraço!")
-  })
-
-  test("singular para um participante", () => {
-    expect(mensagemAgradecimento({ empresa: "Z", participantes: 1 })).toContain("presença de vocês")
   })
 })
 

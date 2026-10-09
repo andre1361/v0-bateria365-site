@@ -121,18 +121,10 @@ export function CompaniesClient({ empresas, semEmpresa, sellers, evento, distrib
     window.open(url, "_blank", "noopener,noreferrer")
   }
 
-  // Agradecimento pela participação no treinamento: abre o WhatsApp da empresa com a
+  // Agradecimento pela participação no treinamento Bateria 365: abre o WhatsApp da empresa com a
   // mensagem pronta; sem telefone, copia a mensagem para enviar por outro canal.
   const agradecer = async (e: Empresa) => {
-    const texto = mensagemAgradecimento({
-      empresa: e.nome,
-      responsavel: e.responsavel,
-      distribuidor: distribuidorNome,
-      vendedor: e.sellerNome,
-      treinamento: evento?.titulo,
-      data: evento?.dataFmt,
-      participantes: e.confirmados || e.cadastrados,
-    })
+    const texto = mensagemAgradecimento({ responsavel: e.responsavel, distribuidor: distribuidorNome, vendedor: e.sellerNome })
     const phone = whatsappPhone(e.telefone)
     if (phone) {
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(texto)}`, "_blank", "noopener,noreferrer")
