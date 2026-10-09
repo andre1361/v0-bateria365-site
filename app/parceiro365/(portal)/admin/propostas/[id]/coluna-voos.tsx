@@ -27,7 +27,7 @@ export function ColunaVoos({
 }) {
   const [texto, setTexto] = useState(escolhido?.modo === "manual" ? formatarValorCampo(escolhido.preco) : "")
   const [modoManual, setModoManual] = useState(escolhido?.modo === "manual")
-  const manual = modoManual
+  const manual = escolhido ? escolhido.modo === "manual" : modoManual
   const invalido = manual && texto !== "" && parseBRL(texto) === null
   const emitirManual = (t: string) => {
     const preco = parseBRL(t)
