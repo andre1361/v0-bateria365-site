@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { aeroportoPorIata, sugerirAeroporto } from "@/lib/proposta/aeroportos"
@@ -62,6 +62,7 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
   const [voos, setVoos] = useState<Voos>(inicial.voos)
   const [buscas, setBuscas] = useState<Partial<Record<OrigemId, ResultadoBusca>>>({})
   const [buscando, setBuscando] = useState(false)
+  const buscaAtual = useRef(0)
   const [link, setLink] = useState(inicial.slug && inicial.chave ? { slug: inicial.slug, chave: inicial.chave, validaAte: inicial.validaAte } : null)
 
   const editavel = podeEditar(inicial.status)
@@ -87,6 +88,8 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
 
   // Destino, data ou duração novos invalidam os preços buscados (os manuais ficam).
   function mudouViagem() {
+    buscaAtual.current++
+    setBuscando(false)
     setBuscas({})
     setVoos((v) => {
       const novo: Voos = {}
@@ -111,8 +114,10 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
   async function buscar(forcar: boolean) {
     setErro(null)
     setBuscando(true)
+    const token = ++buscaAtual.current
     try {
       const r = await buscarVoos(destinoIata, dataInicioISO, duracaoDias, forcar)
+      if (token !== buscaAtual.current) return
       if (r.error || !r.resultados) {
         setErro(r.error ?? "Falha ao buscar voos.")
         return
@@ -129,9 +134,9 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
         return novo
       })
     } catch {
-      setErro("Falha ao buscar voos.")
+      if (token === buscaAtual.current) setErro("Falha ao buscar voos.")
     } finally {
-      setBuscando(false)
+      if (token === buscaAtual.current) setBuscando(false)
     }
   }
 

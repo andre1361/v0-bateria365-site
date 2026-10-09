@@ -26,8 +26,13 @@ export function ColunaVoos({
   onEscolher: (v: VooEscolhido | undefined) => void
 }) {
   const [texto, setTexto] = useState(escolhido?.modo === "manual" ? formatarValorCampo(escolhido.preco) : "")
-  const manual = escolhido?.modo === "manual"
+  const [modoManual, setModoManual] = useState(escolhido?.modo === "manual")
+  const manual = modoManual
   const invalido = manual && texto !== "" && parseBRL(texto) === null
+  const emitirManual = (t: string) => {
+    const preco = parseBRL(t)
+    onEscolher(preco !== null ? { modo: "manual", preco } : undefined)
+  }
   const grupo = `voo-${origem.id}`
 
   return (
@@ -46,7 +51,10 @@ export function ColunaVoos({
           {resultado?.ok &&
             resultado.opcoes.map((o) => (
               <label key={`${o.partida}-${o.preco}`} style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 10px", minHeight: 44, marginBottom: 6, border: `1.5px solid ${mesmoVoo(escolhido, o) ? "#04377f" : "#e6eaf1"}`, borderRadius: 10, cursor: editavel ? "pointer" : "default", fontSize: 13 }}>
-                <input type="radio" name={grupo} disabled={!editavel} checked={mesmoVoo(escolhido, o)} onChange={() => onEscolher({ modo: "serpapi", ...o })} />
+                <input type="radio" name={grupo} disabled={!editavel} checked={mesmoVoo(escolhido, o)} onChange={() => {
+                    setModoManual(false)
+                    onEscolher({ modo: "serpapi", ...o })
+                  }} />
                 <span style={{ flex: 1 }}>
                   <strong>{o.companhia}</strong> · {hora(o.partida)}→{hora(o.chegada)} · {formatarDuracao(o.duracaoMin)} · {escalas(o.escalas)}
                 </span>
@@ -62,7 +70,10 @@ export function ColunaVoos({
           )}
 
           <label style={{ display: "flex", gap: 10, alignItems: "center", minHeight: 44, fontSize: 13, cursor: editavel ? "pointer" : "default" }}>
-            <input type="radio" name={grupo} disabled={!editavel} checked={manual} onChange={() => onEscolher({ modo: "manual", preco: parseBRL(texto) ?? 0 })} />
+            <input type="radio" name={grupo} disabled={!editavel} checked={manual} onChange={() => {
+                setModoManual(true)
+                emitirManual(texto)
+              }} />
             Usar valor manual (ida e volta)
           </label>
           {manual && (
@@ -70,12 +81,13 @@ export function ColunaVoos({
               className="pf365"
               aria-label={`Valor manual da passagem de ${origem.cidade}`}
               inputMode="decimal"
+              aria-invalid={invalido}
               placeholder="Ex.: 1.500,00"
               disabled={!editavel}
               value={texto}
               onChange={(e) => {
                 setTexto(e.target.value)
-                onEscolher({ modo: "manual", preco: parseBRL(e.target.value) ?? 0 })
+                emitirManual(e.target.value)
               }}
               style={{ ...field, marginBottom: 0, borderColor: invalido ? "#d6442f" : "#dde3ec" }}
             />
