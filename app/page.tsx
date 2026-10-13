@@ -18,7 +18,6 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { ContactForm } from "@/components/contact-form" // Importe o ContactForm
-import { WhatsAppFloat } from "@/components/whatsapp-float" // Importe o WhatsAppFloat
 
 export default function BateriaLandingPage() {
   // Defina os dados dos treinamentos para facilitar a duplicação
@@ -755,9 +754,6 @@ export default function BateriaLandingPage() {
           <p className="opacity-60 text-sm mt-2">Bateria 365 | RAC7 DIGITAL LTDA | CNPJ: 58.428.041/0001-63</p>
         </div>
       </footer>
-
-      {/* WhatsApp Float Button */}
-      <WhatsAppFloat />
     </div>
   )
 }
