@@ -183,6 +183,7 @@ export const proposalSettings = pgTable("proposal_settings", {
   honorario: integer("honorario").notNull(),
   acrescimoPct: integer("acrescimo_pct").notNull().default(0),
   validadeDias: integer("validade_dias").notNull().default(10),
+  visitasTecnicas: integer("visitas_tecnicas").notNull().default(3),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
@@ -197,6 +198,12 @@ export const proposals = pgTable("proposals", {
   distribuidorNome: text("distribuidor_nome").notNull().default(""),
   distribuidorCidade: text("distribuidor_cidade").notNull().default(""),
   distribuidorEmail: text("distribuidor_email").notNull().default(""),
+  // Dados do destinatário exibidos na proposta (responsável vem da base da Rede Moura).
+  responsavel: text("responsavel").notNull().default(""),
+  cnpj: text("cnpj").notNull().default(""),
+  endereco: text("endereco").notNull().default(""),
+  // Visitas técnicas para clientes selecionados incluídas nesta proposta.
+  visitasTecnicas: integer("visitas_tecnicas").notNull().default(3),
   // Gerados ao enviar pela primeira vez; ficam iguais ao renovar.
   slug: text("slug").unique(),
   chaveHash: text("chave_hash"),

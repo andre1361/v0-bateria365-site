@@ -6,6 +6,7 @@ import Link from "next/link"
 import { aeroportoPorIata, sugerirAeroporto } from "@/lib/proposta/aeroportos"
 import { calcularProposta, datasViagem, type Parametros, type VooEscolhido, type Voos } from "@/lib/proposta/calculo"
 import { formatarPercentual, formatarValorCampo, parseBRL, parsePercentual } from "@/lib/proposta/formato"
+import { MAX_VISITAS } from "@/lib/proposta/padroes"
 import { ORIGENS, type OrigemId } from "@/lib/proposta/origens"
 import type { ResultadoBusca } from "@/lib/proposta/serpapi"
 import { ROTULO_STATUS, podeEditar, type StatusEfetivo } from "@/lib/proposta/status"
@@ -17,7 +18,7 @@ import { LinkGerado } from "./link-gerado"
 import { Resumo } from "./resumo"
 
 // chave: "u:<id da conta>" (já no portal) ou "m:<id na Rede Moura>" (ainda sem conta).
-export type Distribuidor = { chave: string; nome: string; cidade: string; rotulo: string; grupo: "portal" | "moura" }
+export type Distribuidor = { chave: string; nome: string; cidade: string; responsavel: string; rotulo: string; grupo: "portal" | "moura" }
 export type PropostaInicial = {
   id: string | null
   status: StatusEfetivo
@@ -28,6 +29,10 @@ export type PropostaInicial = {
   parametros: Parametros
   validadeDias: number
   voos: Voos
+  visitasTecnicas: number
+  responsavel: string
+  cnpj: string
+  endereco: string
   slug: string | null
   chave: string | null
   validaAte: string | null
@@ -68,6 +73,10 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
     acrescimoPct: formatarPercentual(inicial.parametros.acrescimoPct),
   })
   const [validadeDias, setValidadeDias] = useState(String(inicial.validadeDias))
+  const [visitasTecnicas, setVisitasTecnicas] = useState(String(inicial.visitasTecnicas))
+  const [responsavel, setResponsavel] = useState(inicial.responsavel)
+  const [cnpj, setCnpj] = useState(inicial.cnpj)
+  const [endereco, setEndereco] = useState(inicial.endereco)
   const [voos, setVoos] = useState<Voos>(inicial.voos)
   const [buscas, setBuscas] = useState<Partial<Record<OrigemId, ResultadoBusca>>>({})
   const [buscando, setBuscando] = useState(false)
@@ -112,6 +121,7 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
 
   function trocarDistribuidor(chave: string) {
     setDistribuidorChave(chave)
+    setResponsavel(distribuidores.find((d) => d.chave === chave)?.responsavel ?? "")
     if (!destinoIata) {
       const s = sugerirAeroporto(distribuidores.find((d) => d.chave === chave)?.cidade ?? "")
       if (s) {
@@ -124,7 +134,8 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
   const payload = () => ({
     distributorId: distribuidorChave.startsWith("u:") ? distribuidorChave.slice(2) : "",
     mouraId: distribuidorChave.startsWith("m:") ? distribuidorChave.slice(2) : "",
-    destinoIata, dataInicioISO, duracaoDias, parametros, validadeDias: Number(validadeDias), voos })
+    destinoIata, dataInicioISO, duracaoDias, parametros, validadeDias: Number(validadeDias), voos,
+    visitasTecnicas: Number(visitasTecnicas), responsavel, cnpj, endereco })
 
   async function buscar(forcar: boolean) {
     setErro(null)
@@ -246,6 +257,25 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
             </p>
           )}
 
+          <label htmlFor="responsavel" style={label}>
+            Responsável pela negociação
+          </label>
+          <input id="responsavel" className="pf365" maxLength={120} disabled={!editavel} value={responsavel} onChange={(e) => setResponsavel(e.target.value)} style={field} />
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ flex: "0 1 200px" }}>
+              <label htmlFor="cnpj" style={label}>
+                CNPJ (opcional)
+              </label>
+              <input id="cnpj" className="pf365" maxLength={30} inputMode="numeric" disabled={!editavel} value={cnpj} onChange={(e) => setCnpj(e.target.value)} style={field} />
+            </div>
+            <div style={{ flex: "1 1 260px" }}>
+              <label htmlFor="endereco" style={label}>
+                Endereço (opcional)
+              </label>
+              <input id="endereco" className="pf365" maxLength={250} disabled={!editavel} value={endereco} onChange={(e) => setEndereco(e.target.value)} style={field} />
+            </div>
+          </div>
+
           <label htmlFor="destino" style={label}>
             Aeroporto de destino
           </label>
@@ -300,7 +330,26 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
                 style={field}
               />
             </div>
+            <div style={{ flex: "0 1 200px" }}>
+              <label htmlFor="visitas" style={label}>
+                Visitas técnicas
+              </label>
+              <input
+                id="visitas"
+                className="pf365"
+                type="number"
+                min={0}
+                max={MAX_VISITAS}
+                disabled={!editavel}
+                value={visitasTecnicas}
+                onChange={(e) => setVisitasTecnicas(e.target.value)}
+                style={field}
+              />
+            </div>
           </div>
+          <p style={{ margin: "-4px 0 0", fontSize: 12.5, color: "#6a7585" }}>
+            Visitas técnicas para clientes selecionados: 1 hora cada, nas lojas indicadas pelo distribuidor. Não alteram o valor.
+          </p>
         </section>
 
         <section style={card}>

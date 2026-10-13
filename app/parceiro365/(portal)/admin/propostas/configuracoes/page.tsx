@@ -10,7 +10,7 @@ export default async function ConfiguracoesPropostasPage() {
     <>
       <PageHeader title="Configurações das propostas" subtitle="Valores padrão de cada nova proposta" />
       <main style={{ flex: 1, padding: "26px 28px 56px" }}>
-        <ConfigClient parametros={cfg.parametros} validadeDias={cfg.validadeDias} />
+        <ConfigClient parametros={cfg.parametros} validadeDias={cfg.validadeDias} visitasTecnicas={cfg.visitasTecnicas} />
       </main>
     </>
   )
