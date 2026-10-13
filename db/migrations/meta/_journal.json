@@ -78,6 +78,13 @@
       "when": 1791893427656,
       "tag": "0010_propostas_rede_moura",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791894701296,
+      "tag": "0011_proposta_completa",
+      "breakpoints": true
     }
   ]
 }

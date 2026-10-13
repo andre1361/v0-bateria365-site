@@ -10,6 +10,10 @@ const base = () => ({
   duracaoDias: 1,
   parametros: { ...PADROES.parametros },
   validadeDias: 10,
+  visitasTecnicas: 3,
+  responsavel: "Fulano de Tal",
+  cnpj: "",
+  endereco: "",
   voos: {
     poa: { modo: "serpapi", preco: 138900, companhia: "GOL", partida: "2026-10-19 10:20", chegada: "2026-10-19 13:30", duracaoMin: 190, escalas: 0 },
     sjp: { modo: "manual", preco: 180000 },
@@ -27,6 +31,11 @@ describe("aceita o que é válido", () => {
   })
   test("rascunho pode estar incompleto", () => {
     expect(validarEntrada({ ...base(), destinoIata: "", dataInicioISO: "", voos: {} }, HOJE, false).ok).toBe(true)
+  })
+  test("dados do destinatário são aparados e limitados", () => {
+    const r = validarEntrada({ ...base(), responsavel: "  Ana  ", cnpj: 123, endereco: "x".repeat(400) }, HOJE, false)
+    if (!r.ok) throw new Error(r.erro)
+    expect([r.valor.responsavel, r.valor.cnpj, r.valor.endereco.length]).toEqual(["Ana", "", 250])
   })
   test("IATA em minúsculas é normalizado", () => {
     const r = validarEntrada({ ...base(), destinoIata: "ssa" }, HOJE, false)
@@ -55,6 +64,9 @@ describe("recusa dados adulterados", () => {
     [{ duracaoDias: 50 }, "A duração deve ser de 1 a 10 dias."],
     [{ duracaoDias: 1.5 }, "A duração deve ser de 1 a 10 dias."],
     [{ validadeDias: 0 }, "A validade deve ser de 1 a 60 dias."],
+    [{ visitasTecnicas: -1 }, "As visitas técnicas devem ser de 0 a 20."],
+    [{ visitasTecnicas: 21 }, "As visitas técnicas devem ser de 0 a 20."],
+    [{ visitasTecnicas: "3" }, "As visitas técnicas devem ser de 0 a 20."],
   ])("%p", (troca, msg) => {
     expect(erro({ ...base(), ...troca })).toBe(msg)
   })

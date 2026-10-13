@@ -1,8 +1,7 @@
 import { and, eq, gt } from "drizzle-orm"
 import { db } from "@/db"
 import { flightSearchCache, proposalSettings } from "@/db/schema"
-import type { Parametros } from "@/lib/proposta/calculo"
-import { PADROES } from "@/lib/proposta/padroes"
+import { PADROES, type Configuracoes } from "@/lib/proposta/padroes"
 import { buscarVoosSerpApi, chaveCache, type BuscaVoos, type ResultadoBusca } from "@/lib/proposta/serpapi"
 import { mouraDirectory, type MouraEntry } from "../moura-directory"
 
@@ -22,7 +21,7 @@ export function unidadeMoura(id: string): MouraEntry | undefined {
 export const nomeUnidadeMoura = (e: MouraEntry) => e.razaoSocial || e.unidade
 export const emailUnidadeMoura = (e: MouraEntry) => e.email.trim().toLowerCase()
 
-export async function obterConfiguracoes(): Promise<{ parametros: Parametros; validadeDias: number }> {
+export async function obterConfiguracoes(): Promise<Configuracoes> {
   const [s] = await db.select().from(proposalSettings).where(eq(proposalSettings.id, "padrao"))
   if (!s) return PADROES
   return {
@@ -34,6 +33,7 @@ export async function obterConfiguracoes(): Promise<{ parametros: Parametros; va
       acrescimoPct: s.acrescimoPct,
     },
     validadeDias: s.validadeDias,
+    visitasTecnicas: s.visitasTecnicas,
   }
 }
 

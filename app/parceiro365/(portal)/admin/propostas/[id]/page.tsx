@@ -25,13 +25,22 @@ export default async function EditorPropostaPage({ params }: { params: Promise<{
     .from(users)
     .orderBy(asc(users.nome))
   const emailsComConta = new Set(contas.map((u) => u.email.trim().toLowerCase()))
+  // Responsável pela negociação: vem da base da Rede Moura, casado pelo e-mail.
+  const responsavelPorEmail = new Map(unidadesMoura().map((e) => [emailUnidadeMoura(e), e.responsavel]))
   const distribuidores: Distribuidor[] = [
     ...contas
       .filter((u) => u.role === "distribuidor" && (u.ativo || u.id === propostaDistId))
-      .map((u) => ({ chave: `u:${u.id}`, nome: u.nome, cidade: u.cidade, rotulo: u.cidade ? `${u.nome} — ${u.cidade}` : u.nome, grupo: "portal" as const })),
+      .map((u) => ({
+        chave: `u:${u.id}`,
+        nome: u.nome,
+        cidade: u.cidade,
+        responsavel: responsavelPorEmail.get(u.email.trim().toLowerCase()) ?? "",
+        rotulo: u.cidade ? `${u.nome} — ${u.cidade}` : u.nome,
+        grupo: "portal" as const,
+      })),
     ...unidadesMoura()
       .filter((e) => !emailsComConta.has(emailUnidadeMoura(e)) || e.id === daProposta?.mouraId)
-      .map((e) => ({ chave: `m:${e.id}`, nome: nomeUnidadeMoura(e), cidade: e.cidade, rotulo: `${e.unidade} — ${e.cidade}/${e.uf}`, grupo: "moura" as const }))
+      .map((e) => ({ chave: `m:${e.id}`, nome: nomeUnidadeMoura(e), cidade: e.cidade, responsavel: e.responsavel, rotulo: `${e.unidade} — ${e.cidade}/${e.uf}`, grupo: "moura" as const }))
       .sort((a, b) => a.rotulo.localeCompare(b.rotulo, "pt-BR")),
   ]
 
@@ -48,6 +57,10 @@ export default async function EditorPropostaPage({ params }: { params: Promise<{
       parametros: cfg.parametros,
       validadeDias: cfg.validadeDias,
       voos: {},
+      visitasTecnicas: cfg.visitasTecnicas,
+      responsavel: "",
+      cnpj: "",
+      endereco: "",
       slug: null,
       chave: null,
       validaAte: null,
@@ -67,6 +80,10 @@ export default async function EditorPropostaPage({ params }: { params: Promise<{
       parametros: p.parametros,
       validadeDias: p.validadeDias,
       voos: p.voos,
+      visitasTecnicas: p.visitasTecnicas,
+      responsavel: p.responsavel,
+      cnpj: p.cnpj,
+      endereco: p.endereco,
       slug: p.slug,
       chave: p.chavePlain,
       validaAte: p.validaAte?.toISOString() ?? null,

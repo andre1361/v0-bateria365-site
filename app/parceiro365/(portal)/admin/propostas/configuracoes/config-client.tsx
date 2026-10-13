@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useActionState } from "react"
 import type { Parametros } from "@/lib/proposta/calculo"
 import { formatarPercentual, formatarValorCampo } from "@/lib/proposta/formato"
+import { MAX_VISITAS } from "@/lib/proposta/padroes"
 import { salvarConfiguracoes, type ConfigState } from "../actions"
 import { botaoPrimario, botaoSecundario, card, field, label } from "../estilos"
 
@@ -16,7 +17,7 @@ const CAMPOS: { nome: keyof Omit<Parametros, "acrescimoPct">; rotulo: string; aj
   { nome: "honorario", rotulo: "Honorário do treinamento (R$)", ajuda: "Valor fixo por treinamento." },
 ]
 
-export function ConfigClient({ parametros, validadeDias }: { parametros: Parametros; validadeDias: number }) {
+export function ConfigClient({ parametros, validadeDias, visitasTecnicas }: { parametros: Parametros; validadeDias: number; visitasTecnicas: number }) {
   const [state, action, pending] = useActionState(salvarConfiguracoes, initial)
   return (
     <form action={action} style={{ ...card, maxWidth: 520 }}>
@@ -37,6 +38,11 @@ export function ConfigClient({ parametros, validadeDias }: { parametros: Paramet
         Validade da proposta (dias)
       </label>
       <input id="validadeDias" className="pf365" name="validadeDias" type="number" min={1} max={60} defaultValue={validadeDias} style={field} required />
+      <label htmlFor="visitasTecnicas" style={label}>
+        Visitas técnicas para clientes selecionados
+      </label>
+      <input id="visitasTecnicas" className="pf365" name="visitasTecnicas" type="number" min={0} max={MAX_VISITAS} defaultValue={visitasTecnicas} style={{ ...field, marginBottom: 4 }} required />
+      <p style={{ margin: "0 0 14px", fontSize: 12, color: "#8792a2" }}>Quantidade padrão das novas propostas. Dá para mudar em cada proposta.</p>
 
       {state.error && <div style={{ margin: "0 0 12px", fontSize: 13, color: "#c0392b", fontWeight: 600 }}>{state.error}</div>}
       {state.ok && <div style={{ margin: "0 0 12px", fontSize: 13, color: "#1e7b3c", fontWeight: 600 }}>{state.ok}</div>}

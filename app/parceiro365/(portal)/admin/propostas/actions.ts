@@ -12,6 +12,7 @@ import { gerarChave } from "@/lib/proposta/chave"
 import { UUID_RE, validarEntrada, type EntradaProposta } from "@/lib/proposta/entrada"
 import { dataISONoBrasil, isoValida, parseBRL, parsePercentual } from "@/lib/proposta/formato"
 import { ORIGENS, type OrigemId } from "@/lib/proposta/origens"
+import { MAX_VISITAS } from "@/lib/proposta/padroes"
 import type { ResultadoBusca } from "@/lib/proposta/serpapi"
 import { podeEditar, statusEfetivo, validadeEfetiva } from "@/lib/proposta/status"
 import { slugify } from "@/lib/slug"
@@ -77,6 +78,10 @@ async function gravar(id: string | null, e: EntradaProposta): Promise<{ error?: 
     parametros: e.parametros,
     validadeDias: e.validadeDias,
     voos: e.voos,
+    visitasTecnicas: e.visitasTecnicas,
+    responsavel: e.responsavel,
+    cnpj: e.cnpj,
+    endereco: e.endereco,
     total: calcularProposta(e).total,
     updatedAt: new Date(),
   }
@@ -197,15 +202,19 @@ export async function salvarConfiguracoes(_prev: ConfigState, formData: FormData
   const honorario = dinheiro("honorario")
   const acrescimoPct = parsePercentual(String(formData.get("acrescimoPct") ?? ""))
   const validadeDias = Number(formData.get("validadeDias"))
+  const visitasTecnicas = Number(formData.get("visitasTecnicas"))
   if (hotelDiaria === null || alimentacaoDia === null || uberFixo === null || honorario === null || acrescimoPct === null) {
     return { error: "Revise os valores — use o formato 1.500,00 (e 6,5 no acréscimo)." }
   }
   if (!Number.isInteger(validadeDias) || validadeDias < 1 || validadeDias > 60) return { error: "A validade deve ser de 1 a 60 dias." }
+  if (!Number.isInteger(visitasTecnicas) || visitasTecnicas < 0 || visitasTecnicas > MAX_VISITAS) {
+    return { error: `As visitas técnicas devem ser de 0 a ${MAX_VISITAS}.` }
+  }
   if ([hotelDiaria, alimentacaoDia, uberFixo, honorario].some((v) => v > 50_000_000)) {
     return { error: "Revise os valores — use o formato 1.500,00 (e 6,5 no acréscimo)." }
   }
 
-  const valores = { hotelDiaria, alimentacaoDia, uberFixo, honorario, acrescimoPct, validadeDias, updatedAt: new Date() }
+  const valores = { hotelDiaria, alimentacaoDia, uberFixo, honorario, acrescimoPct, validadeDias, visitasTecnicas, updatedAt: new Date() }
   await db
     .insert(proposalSettings)
     .values({ id: "padrao", ...valores })

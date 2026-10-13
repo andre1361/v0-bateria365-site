@@ -2,6 +2,7 @@ import { aeroportoPorIata } from "./aeroportos"
 import type { Parametros, VooEscolhido, Voos } from "./calculo"
 import { isoValida, somarDiasISO } from "./formato"
 import { ORIGENS } from "./origens"
+import { MAX_VISITAS } from "./padroes"
 
 // Valida o que chega do editor do admin. Nada do navegador é confiável: valores
 // fora de faixa são recusados e campos desconhecidos são descartados.
@@ -17,6 +18,11 @@ export type EntradaProposta = {
   parametros: Parametros
   validadeDias: number
   voos: Voos
+  // Visitas técnicas para clientes selecionados e dados do destinatário (opcionais).
+  visitasTecnicas: number
+  responsavel: string
+  cnpj: string
+  endereco: string
 }
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -71,6 +77,12 @@ export function validarEntrada(
   const validadeDias = inteiro(r.validadeDias, 1, 60)
   if (validadeDias === null) return { ok: false, erro: "A validade deve ser de 1 a 60 dias." }
 
+  const visitasTecnicas = inteiro(r.visitasTecnicas, 0, MAX_VISITAS)
+  if (visitasTecnicas === null) return { ok: false, erro: `As visitas técnicas devem ser de 0 a ${MAX_VISITAS}.` }
+  const responsavel = texto(r.responsavel, 120) ?? ""
+  const cnpj = texto(r.cnpj, 30) ?? ""
+  const endereco = texto(r.endereco, 250) ?? ""
+
   const p = (r.parametros ?? {}) as Record<string, unknown>
   const lidos = {
     hotelDiaria: inteiro(p.hotelDiaria, 0, MAX_VALOR),
@@ -105,5 +117,5 @@ export function validarEntrada(
     }
   }
 
-  return { ok: true, valor: { distributorId, mouraId, destinoIata, dataInicioISO, duracaoDias, parametros, validadeDias, voos } }
+  return { ok: true, valor: { distributorId, mouraId, destinoIata, dataInicioISO, duracaoDias, parametros, validadeDias, voos, visitasTecnicas, responsavel, cnpj, endereco } }
 }
