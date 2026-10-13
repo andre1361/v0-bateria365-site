@@ -3,11 +3,12 @@
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
-import { randomUUID, randomBytes } from "crypto"
+import { randomUUID } from "crypto"
 import bcrypt from "bcryptjs"
 import { and, eq, ne } from "drizzle-orm"
 import { db } from "@/db"
 import { users, events } from "@/db/schema"
+import { gerarSenha } from "@/lib/senha"
 import { requireAdmin, IMPERSONATION_COOKIE } from "../../guard"
 
 export type AdminState = { error?: string; ok?: string }
@@ -172,14 +173,6 @@ export async function deleteEventForDistributor(formData: FormData): Promise<voi
 
 export type LoginData = { nome: string; email: string; senha: string | null } | { error: string }
 
-// Senha legível, sem caracteres ambíguos, no formato ABCD-2345.
-function gerarSenha() {
-  const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-  const b = randomBytes(8)
-  let s = ""
-  for (let i = 0; i < 8; i++) s += abc[b[i] % abc.length]
-  return s.slice(0, 4) + "-" + s.slice(4)
-}
 
 export async function getDistributorLogin(id: string): Promise<LoginData> {
   await requireAdmin()

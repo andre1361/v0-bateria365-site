@@ -188,9 +188,15 @@ export const proposalSettings = pgTable("proposal_settings", {
 
 export const proposals = pgTable("proposals", {
   id: uuid("id").defaultRandom().primaryKey(),
-  distributorId: uuid("distributor_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+  // Nulo enquanto a proposta é para uma unidade da Rede Moura sem conta no portal:
+  // a conta é criada no aceite, e aí este campo é preenchido.
+  distributorId: uuid("distributor_id").references(() => users.id, { onDelete: "cascade" }),
+  // Unidade do diretório da Rede Moura (moura-directory.ts) e cópia dos dados dela,
+  // usados para exibir a proposta e criar a conta no aceite.
+  mouraId: text("moura_id"),
+  distribuidorNome: text("distribuidor_nome").notNull().default(""),
+  distribuidorCidade: text("distribuidor_cidade").notNull().default(""),
+  distribuidorEmail: text("distribuidor_email").notNull().default(""),
   // Gerados ao enviar pela primeira vez; ficam iguais ao renovar.
   slug: text("slug").unique(),
   chaveHash: text("chave_hash"),

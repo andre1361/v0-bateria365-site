@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { cookies } from "next/headers"
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { proposals, users } from "@/db/schema"
 import { propostaCookieName, propostaToken } from "@/lib/proposta/chave"
@@ -20,9 +20,14 @@ const caixa: React.CSSProperties = { maxWidth: 420, margin: "8vh auto 0", backgr
 export default async function PropostaPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const [row] = await db
-    .select({ p: proposals, nome: users.nome, cidade: users.cidade })
+    // Sem conta ainda (unidade da Rede Moura): usa os dados copiados na proposta.
+    .select({
+      p: proposals,
+      nome: sql<string>`coalesce(${users.nome}, ${proposals.distribuidorNome})`,
+      cidade: sql<string>`coalesce(${users.cidade}, ${proposals.distribuidorCidade})`,
+    })
     .from(proposals)
-    .innerJoin(users, eq(users.id, proposals.distributorId))
+    .leftJoin(users, eq(users.id, proposals.distributorId))
     .where(eq(proposals.slug, slug))
   const disponivel = !!row && !!row.p.chaveHash && row.p.status !== "rascunho" && row.p.status !== "cancelada"
 

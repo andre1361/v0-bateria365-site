@@ -6,8 +6,11 @@ import { ORIGENS } from "./origens"
 // Valida o que chega do editor do admin. Nada do navegador é confiável: valores
 // fora de faixa são recusados e campos desconhecidos são descartados.
 
+// Distribuidor: conta do portal (distributorId) OU unidade da Rede Moura ainda sem
+// conta (mouraId). Exatamente um dos dois vem preenchido.
 export type EntradaProposta = {
   distributorId: string
+  mouraId: string
   destinoIata: string
   dataInicioISO: string
   duracaoDias: number
@@ -17,6 +20,7 @@ export type EntradaProposta = {
 }
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+export const MOURA_ID_RE = /^[a-z0-9-]{1,100}$/
 
 const MAX_VALOR = 50_000_000 // R$ 500 mil (o total não pode estourar o int4)
 const MAX_PASSAGEM = 10_000_000 // R$ 100 mil
@@ -51,8 +55,9 @@ export function validarEntrada(
   if (!raw || typeof raw !== "object") return { ok: false, erro: "Dados inválidos." }
   const r = raw as Record<string, unknown>
 
-  const distributorId = typeof r.distributorId === "string" ? r.distributorId : ""
-  if (!UUID_RE.test(distributorId)) return { ok: false, erro: "Escolha o distribuidor." }
+  const distributorId = typeof r.distributorId === "string" && UUID_RE.test(r.distributorId) ? r.distributorId : ""
+  const mouraId = !distributorId && typeof r.mouraId === "string" && MOURA_ID_RE.test(r.mouraId) ? r.mouraId : ""
+  if (!distributorId && !mouraId) return { ok: false, erro: "Escolha o distribuidor." }
 
   const destinoIata = typeof r.destinoIata === "string" ? r.destinoIata.trim().toUpperCase() : ""
   if (destinoIata && !aeroportoPorIata(destinoIata)) return { ok: false, erro: "Aeroporto de destino inválido." }
@@ -100,5 +105,5 @@ export function validarEntrada(
     }
   }
 
-  return { ok: true, valor: { distributorId, destinoIata, dataInicioISO, duracaoDias, parametros, validadeDias, voos } }
+  return { ok: true, valor: { distributorId, mouraId, destinoIata, dataInicioISO, duracaoDias, parametros, validadeDias, voos } }
 }

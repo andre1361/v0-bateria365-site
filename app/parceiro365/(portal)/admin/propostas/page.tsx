@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { desc, eq } from "drizzle-orm"
+import { desc, eq, sql } from "drizzle-orm"
 import { db } from "@/db"
 import { proposals, users } from "@/db/schema"
 import { dataISONoBrasil, formatarBRL, formatarDataISO } from "@/lib/proposta/formato"
@@ -24,10 +24,11 @@ export default async function PropostasPage() {
       dataInicioISO: proposals.dataInicioISO,
       duracaoDias: proposals.duracaoDias,
       eventId: proposals.eventId,
-      distribuidor: users.nome,
+      // Sem conta ainda (unidade da Rede Moura): usa o nome copiado na proposta.
+      distribuidor: sql<string>`coalesce(${users.nome}, ${proposals.distribuidorNome})`,
     })
     .from(proposals)
-    .innerJoin(users, eq(users.id, proposals.distributorId))
+    .leftJoin(users, eq(users.id, proposals.distributorId))
     .orderBy(desc(proposals.updatedAt))
 
   return (

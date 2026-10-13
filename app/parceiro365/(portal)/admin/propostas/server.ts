@@ -4,8 +4,23 @@ import { flightSearchCache, proposalSettings } from "@/db/schema"
 import type { Parametros } from "@/lib/proposta/calculo"
 import { PADROES } from "@/lib/proposta/padroes"
 import { buscarVoosSerpApi, chaveCache, type BuscaVoos, type ResultadoBusca } from "@/lib/proposta/serpapi"
+import { mouraDirectory, type MouraEntry } from "../moura-directory"
 
 const CACHE_MS = 6 * 60 * 60 * 1000
+
+// Unidades da Rede Moura que podem receber proposta: matriz ou filial com e-mail
+// (o e-mail vira o login da conta criada no aceite). Holding, fábrica e escritório ficam de fora.
+export function unidadesMoura(): MouraEntry[] {
+  return mouraDirectory.filter((e) => (e.tipo === "Matriz" || e.tipo === "Filial") && e.email.trim())
+}
+
+export function unidadeMoura(id: string): MouraEntry | undefined {
+  return unidadesMoura().find((e) => e.id === id)
+}
+
+// Mesmo nome que o cadastro de distribuidor do Super Admin usa para a conta.
+export const nomeUnidadeMoura = (e: MouraEntry) => e.razaoSocial || e.unidade
+export const emailUnidadeMoura = (e: MouraEntry) => e.email.trim().toLowerCase()
 
 export async function obterConfiguracoes(): Promise<{ parametros: Parametros; validadeDias: number }> {
   const [s] = await db.select().from(proposalSettings).where(eq(proposalSettings.id, "padrao"))

@@ -1,29 +1,39 @@
 import { notFound } from "next/navigation"
-import { and, asc, eq, or } from "drizzle-orm"
+import { asc, eq } from "drizzle-orm"
 import { db } from "@/db"
 import { proposals, users } from "@/db/schema"
 import { UUID_RE } from "@/lib/proposta/entrada"
 import { statusEfetivo } from "@/lib/proposta/status"
 import { PageHeader } from "../../../../page-header"
 import { requireAdmin } from "../../../../guard"
-import { obterConfiguracoes } from "../server"
-import { EditorClient, type PropostaInicial } from "./editor-client"
+import { emailUnidadeMoura, nomeUnidadeMoura, obterConfiguracoes, unidadesMoura } from "../server"
+import { EditorClient, type Distribuidor, type PropostaInicial } from "./editor-client"
 
 export default async function EditorPropostaPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin()
   const { id } = await params
 
-  // Só distribuidores ativos — mais o da própria proposta, mesmo se estiver inativo.
-  let propostaDistId: string | null = null
+  // Contas ativas do portal — mais a da própria proposta, mesmo se estiver inativa —
+  // e as unidades da Rede Moura que ainda não têm conta (casadas pelo e-mail).
+  let daProposta: { distributorId: string | null; mouraId: string | null } | undefined
   if (id !== "nova" && UUID_RE.test(id)) {
-    const [d] = await db.select({ d: proposals.distributorId }).from(proposals).where(eq(proposals.id, id))
-    propostaDistId = d?.d ?? null
+    ;[daProposta] = await db.select({ distributorId: proposals.distributorId, mouraId: proposals.mouraId }).from(proposals).where(eq(proposals.id, id))
   }
-  const distribuidores = await db
-    .select({ id: users.id, nome: users.nome, cidade: users.cidade })
+  const propostaDistId = daProposta?.distributorId
+  const contas = await db
+    .select({ id: users.id, nome: users.nome, cidade: users.cidade, email: users.email, role: users.role, ativo: users.ativo })
     .from(users)
-    .where(and(eq(users.role, "distribuidor"), or(eq(users.ativo, true), ...(propostaDistId ? [eq(users.id, propostaDistId)] : []))))
     .orderBy(asc(users.nome))
+  const emailsComConta = new Set(contas.map((u) => u.email.trim().toLowerCase()))
+  const distribuidores: Distribuidor[] = [
+    ...contas
+      .filter((u) => u.role === "distribuidor" && (u.ativo || u.id === propostaDistId))
+      .map((u) => ({ chave: `u:${u.id}`, nome: u.nome, cidade: u.cidade, rotulo: u.cidade ? `${u.nome} — ${u.cidade}` : u.nome, grupo: "portal" as const })),
+    ...unidadesMoura()
+      .filter((e) => !emailsComConta.has(emailUnidadeMoura(e)) || e.id === daProposta?.mouraId)
+      .map((e) => ({ chave: `m:${e.id}`, nome: nomeUnidadeMoura(e), cidade: e.cidade, rotulo: `${e.unidade} — ${e.cidade}/${e.uf}`, grupo: "moura" as const }))
+      .sort((a, b) => a.rotulo.localeCompare(b.rotulo, "pt-BR")),
+  ]
 
   let inicial: PropostaInicial
   if (id === "nova") {
@@ -31,7 +41,7 @@ export default async function EditorPropostaPage({ params }: { params: Promise<{
     inicial = {
       id: null,
       status: "rascunho",
-      distributorId: "",
+      distribuidor: "",
       destinoIata: "",
       dataInicioISO: "",
       duracaoDias: 1,
@@ -50,7 +60,7 @@ export default async function EditorPropostaPage({ params }: { params: Promise<{
     inicial = {
       id: p.id,
       status: statusEfetivo(p.status, p.validaAte),
-      distributorId: p.distributorId,
+      distribuidor: p.distributorId ? `u:${p.distributorId}` : `m:${p.mouraId}`,
       destinoIata: p.destinoIata,
       dataInicioISO: p.dataInicioISO,
       duracaoDias: p.duracaoDias,
