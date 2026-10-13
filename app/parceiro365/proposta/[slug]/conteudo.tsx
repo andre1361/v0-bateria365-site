@@ -7,6 +7,7 @@ import { Aceite } from "./aceite"
 import { BotaoImprimir } from "./imprimir"
 
 // Textos fixos da proposta comercial (resumo da proposta enviada a Palmas em 2026).
+// Cada dia é um treinamento (uma turma) de até 150 participantes.
 const MAX_PARTICIPANTES = 150
 const ESPECIALISTAS = [
   {
@@ -103,7 +104,9 @@ export function Conteudo({ p, nome, cidade }: { p: typeof proposals.$inferSelect
   const visitas = p.visitasTecnicas
   const rotuloVisitas = `${visitas} visita${visitas > 1 ? "s" : ""} técnica${visitas > 1 ? "s" : ""}`
   const pagamento = condicoesPagamento(p.total)
-  const porParticipante = Math.round(p.total / MAX_PARTICIPANTES)
+  const participantes = MAX_PARTICIPANTES * n
+  const porParticipante = Math.round(p.total / participantes)
+  const turmas = n > 1 ? ` (${n} turmas de ${MAX_PARTICIPANTES})` : ""
   const incluso = [
     "Treinamento ministrado pelos instrutores oficiais do Bateria 365",
     "Passagens aéreas, hospedagem, alimentação e transporte da equipe",
@@ -130,7 +133,7 @@ export function Conteudo({ p, nome, cidade }: { p: typeof proposals.$inferSelect
             <Dado icone={<MapPin size={14} aria-hidden />} rotulo="Local" valor={p.destinoCidade} />
             <Dado icone={<CalendarDays size={14} aria-hidden />} rotulo="Data prevista" valor={periodo} />
             <Dado icone={<Clock size={14} aria-hidden />} rotulo="Duração" valor={dias} />
-            <Dado icone={<Users size={14} aria-hidden />} rotulo="Participantes" valor={`Até ${MAX_PARTICIPANTES}`} />
+            <Dado icone={<Users size={14} aria-hidden />} rotulo="Participantes" valor={`Até ${participantes}`} />
           </div>
         </header>
 
@@ -198,7 +201,7 @@ export function Conteudo({ p, nome, cidade }: { p: typeof proposals.$inferSelect
             ))}
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
-            {["Teórico e expositivo", "Abordagem visual", `Até ${MAX_PARTICIPANTES} participantes`, dias].map((c) => (
+            {["Teórico e expositivo", "Abordagem visual", `Até ${MAX_PARTICIPANTES} participantes por dia`, n > 1 ? `${n} dias, ${n} turmas` : dias].map((c) => (
               <span key={c} style={{ padding: "6px 12px", borderRadius: 999, background: "#eaf1fb", color: AZUL, fontSize: 13, fontWeight: 700 }}>
                 {c}
               </span>
@@ -265,7 +268,7 @@ export function Conteudo({ p, nome, cidade }: { p: typeof proposals.$inferSelect
               <div style={{ background: "rgba(255,255,255,0.1)", border: `2px solid ${AMARELO}`, borderRadius: 16, padding: "14px 18px" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: AMARELO, textTransform: "uppercase", letterSpacing: "0.05em" }}>Por participante</div>
                 <div style={{ fontSize: 38, fontWeight: 800, lineHeight: 1.1, marginTop: 6, color: AMARELO }}>{formatarBRL(porParticipante)}</div>
-                <div style={{ fontSize: 13, color: "#dbe6f7", marginTop: 6 }}>Considerando {MAX_PARTICIPANTES} participantes.</div>
+                <div style={{ fontSize: 13, color: "#dbe6f7", marginTop: 6 }}>Considerando {participantes} participantes{turmas}.</div>
               </div>
             </div>
           </div>
