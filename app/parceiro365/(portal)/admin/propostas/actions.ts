@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { randomUUID } from "crypto"
-import { and, eq, inArray, ne } from "drizzle-orm"
+import { and, eq, inArray, ne, type SQL } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { db } from "@/db"
 import { proposalSettings, proposals, users } from "@/db/schema"
@@ -16,19 +16,45 @@ import type { ResultadoBusca } from "@/lib/proposta/serpapi"
 import { podeEditar, statusEfetivo, validadeEfetiva } from "@/lib/proposta/status"
 import { slugify } from "@/lib/slug"
 import { requireAdmin } from "../../../guard"
-import { buscarVoosComCache } from "./server"
+import { buscarVoosComCache, emailUnidadeMoura, nomeUnidadeMoura, unidadeMoura } from "./server"
 
 const LISTA = "/parceiro365/admin/propostas"
+
+type Distribuidor = Pick<typeof proposals.$inferInsert, "distributorId" | "mouraId" | "distribuidorNome" | "distribuidorCidade" | "distribuidorEmail">
+
+// Conta do portal ou unidade da Rede Moura. Proposta nova só pode ser de um distribuidor
+// ativo (a existente mantém o seu). Se a unidade da Rede Moura já tem conta (mesmo
+// e-mail), a proposta vai direto para a conta.
+async function resolverDistribuidor(e: EntradaProposta, nova: boolean): Promise<Distribuidor | { error: string }> {
+  const daConta = async (onde: SQL) => {
+    const [u] = await db.select({ id: users.id, role: users.role, ativo: users.ativo }).from(users).where(onde)
+    return u
+  }
+  const naoEncontrado = { error: "Distribuidor não encontrado." }
+
+  if (e.distributorId) {
+    const u = await daConta(eq(users.id, e.distributorId))
+    if (!u || u.role !== "distribuidor" || (nova && !u.ativo)) return naoEncontrado
+    return { distributorId: u.id, mouraId: null, distribuidorNome: "", distribuidorCidade: "", distribuidorEmail: "" }
+  }
+
+  const unidade = unidadeMoura(e.mouraId)
+  if (!unidade) return naoEncontrado
+  const email = emailUnidadeMoura(unidade)
+  const u = await daConta(eq(users.email, email))
+  if (u) {
+    if (u.role !== "distribuidor") return { error: "O e-mail desta unidade pertence a uma conta que não é de distribuidor." }
+    if (nova && !u.ativo) return { error: "Esta unidade já tem conta no portal, mas está inativa. Ative-a no Super Admin." }
+    return { distributorId: u.id, mouraId: null, distribuidorNome: "", distribuidorCidade: "", distribuidorEmail: "" }
+  }
+  return { distributorId: null, mouraId: unidade.id, distribuidorNome: nomeUnidadeMoura(unidade), distribuidorCidade: unidade.cidade, distribuidorEmail: email }
+}
 
 // Grava rascunho/alterações. O total é sempre recalculado aqui, nunca vem do navegador.
 async function gravar(id: string | null, e: EntradaProposta): Promise<{ error?: string; id?: string }> {
   if (id && !UUID_RE.test(id)) return { error: "Proposta não encontrada." }
-  // Proposta nova só pode ser de um distribuidor ativo (a existente mantém o seu).
-  const [dist] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(and(eq(users.id, e.distributorId), eq(users.role, "distribuidor"), ...(id ? [] : [eq(users.ativo, true)])))
-  if (!dist) return { error: "Distribuidor não encontrado." }
+  const dist = await resolverDistribuidor(e, !id)
+  if ("error" in dist) return dist
 
   if (id) {
     const [atual] = await db
@@ -41,7 +67,7 @@ async function gravar(id: string | null, e: EntradaProposta): Promise<{ error?: 
 
   const datas = e.dataInicioISO ? datasViagem(e.dataInicioISO, e.duracaoDias) : { idaISO: "", voltaISO: "" }
   const valores = {
-    distributorId: e.distributorId,
+    ...dist,
     destinoIata: e.destinoIata,
     destinoCidade: aeroportoPorIata(e.destinoIata)?.cidade ?? "",
     dataInicioISO: e.dataInicioISO,

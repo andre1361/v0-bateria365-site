@@ -34,9 +34,21 @@ describe("aceita o que é válido", () => {
   })
 })
 
+describe("distribuidor", () => {
+  test("unidade da Rede Moura sem conta no portal", () => {
+    const r = validarEntrada({ ...base(), distributorId: "", mouraId: "avic-filial-guarapuava-2" }, HOJE, true)
+    expect(r.ok && [r.valor.distributorId, r.valor.mouraId]).toEqual(["", "avic-filial-guarapuava-2"])
+  })
+  test("conta do portal tem prioridade e descarta a unidade da Rede Moura", () => {
+    const r = validarEntrada({ ...base(), mouraId: "avic-1" }, HOJE, true)
+    expect(r.ok && r.valor.mouraId).toBe("")
+  })
+})
+
 describe("recusa dados adulterados", () => {
   test.each([
     [{ distributorId: "abc" }, "Escolha o distribuidor."],
+    [{ distributorId: "", mouraId: "Avic 1; drop" }, "Escolha o distribuidor."],
     [{ destinoIata: "XXX" }, "Aeroporto de destino inválido."],
     [{ dataInicioISO: "2026-02-30" }, "Data do treinamento inválida."],
     [{ duracaoDias: 0 }, "A duração deve ser de 1 a 10 dias."],

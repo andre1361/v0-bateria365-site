@@ -16,11 +16,12 @@ import { ColunaVoos } from "./coluna-voos"
 import { LinkGerado } from "./link-gerado"
 import { Resumo } from "./resumo"
 
-export type Distribuidor = { id: string; nome: string; cidade: string }
+// chave: "u:<id da conta>" (já no portal) ou "m:<id na Rede Moura>" (ainda sem conta).
+export type Distribuidor = { chave: string; nome: string; cidade: string; rotulo: string; grupo: "portal" | "moura" }
 export type PropostaInicial = {
   id: string | null
   status: StatusEfetivo
-  distributorId: string
+  distribuidor: string
   destinoIata: string
   dataInicioISO: string
   duracaoDias: number
@@ -32,6 +33,11 @@ export type PropostaInicial = {
   validaAte: string | null
   temEvento: boolean
 }
+
+const GRUPOS = [
+  { grupo: "portal", rotulo: "Já no portal" },
+  { grupo: "moura", rotulo: "Rede Moura — ainda sem conta" },
+] as const
 
 type ChaveCusto = keyof Omit<Parametros, "acrescimoPct">
 const CUSTOS: { chave: ChaveCusto; rotulo: string }[] = [
@@ -48,7 +54,7 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
   const [aviso, setAviso] = useState<string | null>(null)
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false)
 
-  const [distributorId, setDistributorId] = useState(inicial.distributorId)
+  const [distribuidorChave, setDistribuidorChave] = useState(inicial.distribuidor)
   const [destinoIata, setDestinoIata] = useState(inicial.destinoIata)
   const [dataInicioISO, setDataInicioISO] = useState(inicial.dataInicioISO)
   // Texto livre enquanto digita; o número usado nos cálculos é derivado (1 a 10).
@@ -86,7 +92,7 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
   const algumInvalido = Object.values(lidos).some((v) => v === null)
   const calculo = calcularProposta({ destinoIata, duracaoDias, parametros, voos })
   const datas = dataInicioISO ? datasViagem(dataInicioISO, duracaoDias) : null
-  const distribuidor = distribuidores.find((d) => d.id === distributorId)
+  const distribuidor = distribuidores.find((d) => d.chave === distribuidorChave)
   const rot = ROTULO_STATUS[inicial.status]
   // Proposta já enviada só pode ser salva completa (senão o link ficaria com voos zerados).
   const exigeCompleta = inicial.status === "enviada" || inicial.status === "expirada"
@@ -104,10 +110,10 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
     })
   }
 
-  function trocarDistribuidor(id: string) {
-    setDistributorId(id)
+  function trocarDistribuidor(chave: string) {
+    setDistribuidorChave(chave)
     if (!destinoIata) {
-      const s = sugerirAeroporto(distribuidores.find((d) => d.id === id)?.cidade ?? "")
+      const s = sugerirAeroporto(distribuidores.find((d) => d.chave === chave)?.cidade ?? "")
       if (s) {
         setDestinoIata(s.iata)
         mudouViagem()
@@ -115,7 +121,10 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
     }
   }
 
-  const payload = () => ({ distributorId, destinoIata, dataInicioISO, duracaoDias, parametros, validadeDias: Number(validadeDias), voos })
+  const payload = () => ({
+    distributorId: distribuidorChave.startsWith("u:") ? distribuidorChave.slice(2) : "",
+    mouraId: distribuidorChave.startsWith("m:") ? distribuidorChave.slice(2) : "",
+    destinoIata, dataInicioISO, duracaoDias, parametros, validadeDias: Number(validadeDias), voos })
 
   async function buscar(forcar: boolean) {
     setErro(null)
@@ -216,15 +225,26 @@ export function EditorClient({ inicial, distribuidores }: { inicial: PropostaIni
           <label htmlFor="distribuidor" style={label}>
             Distribuidor
           </label>
-          <select id="distribuidor" className="pf365" disabled={!editavel || !!inicial.slug} value={distributorId} onChange={(e) => trocarDistribuidor(e.target.value)} style={field}>
+          <select id="distribuidor" className="pf365" disabled={!editavel || !!inicial.slug} value={distribuidorChave} onChange={(e) => trocarDistribuidor(e.target.value)} style={field}>
             <option value="">Escolha…</option>
-            {distribuidores.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.nome}
-                {d.cidade ? ` — ${d.cidade}` : ""}
-              </option>
-            ))}
+            {GRUPOS.map((g) => {
+              const lista = distribuidores.filter((d) => d.grupo === g.grupo)
+              return lista.length ? (
+                <optgroup key={g.grupo} label={g.rotulo}>
+                  {lista.map((d) => (
+                    <option key={d.chave} value={d.chave}>
+                      {d.rotulo}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null
+            })}
           </select>
+          {distribuidor?.grupo === "moura" && (
+            <p style={{ margin: "6px 0 0", fontSize: 12.5, color: "#6a7585" }}>
+              Ainda sem conta no portal. A conta é criada quando o distribuidor aceitar a proposta.
+            </p>
+          )}
 
           <label htmlFor="destino" style={label}>
             Aeroporto de destino

@@ -7,9 +7,10 @@ import { randomUUID } from "crypto"
 import { and, eq, gt, isNull, sql } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 import { db } from "@/db"
-import { events, proposals } from "@/db/schema"
+import { events, proposals, users } from "@/db/schema"
 import { normalizarChave, propostaCookieName, propostaToken } from "@/lib/proposta/chave"
 import { statusEfetivo } from "@/lib/proposta/status"
+import { gerarSenha } from "@/lib/senha"
 import { slugify } from "@/lib/slug"
 
 export type ChaveState = { error?: string }
@@ -57,7 +58,15 @@ export async function aceitarProposta(slug: string, visto: string): Promise<{ er
     .where(
       and(eq(proposals.id, p.id), eq(proposals.status, "enviada"), gt(proposals.validaAte, sql`now()`), eq(proposals.updatedAt, vistoEm)),
     )
-    .returning({ id: proposals.id, distributorId: proposals.distributorId, dataInicioISO: proposals.dataInicioISO, destinoCidade: proposals.destinoCidade })
+    .returning({
+      id: proposals.id,
+      distributorId: proposals.distributorId,
+      dataInicioISO: proposals.dataInicioISO,
+      destinoCidade: proposals.destinoCidade,
+      distribuidorNome: proposals.distribuidorNome,
+      distribuidorCidade: proposals.distribuidorCidade,
+      distribuidorEmail: proposals.distribuidorEmail,
+    })
   if (!reservada) {
     revalidatePath(caminho(slug))
     const [atual] = await db.select({ status: proposals.status, validaAte: proposals.validaAte }).from(proposals).where(eq(proposals.id, p.id))
@@ -67,6 +76,26 @@ export async function aceitarProposta(slug: string, visto: string): Promise<{ er
     return { error: "Esta proposta não pode mais ser aceita." }
   }
 
+  const desfazerReserva = async () => {
+    try {
+      await db
+        .update(proposals)
+        .set({ status: "enviada", aceitaEm: null, updatedAt: vistoEm })
+        .where(and(eq(proposals.id, p.id), eq(proposals.status, "aceita"), isNull(proposals.eventId)))
+    } catch {}
+  }
+
+  // Unidade da Rede Moura ainda sem conta: a conta nasce agora, com os dados copiados
+  // na proposta. Falha aqui também desfaz a reserva.
+  let distributorId = reservada.distributorId
+  if (!distributorId) {
+    distributorId = await contaDoDistribuidor(reservada).catch(() => null)
+    if (!distributorId) {
+      await desfazerReserva()
+      return { error: "Não foi possível concluir o aceite — tente de novo." }
+    }
+  }
+
   // O evento é criado uma única vez. Falha ao inserir: desfaz a reserva. Falha só ao
   // vincular: tenta de novo e, se persistir, mantém o aceite (o evento já existe).
   let eventoId: string | null = null
@@ -74,21 +103,16 @@ export async function aceitarProposta(slug: string, visto: string): Promise<{ er
     const eventoSlug = (slugify(`${reservada.destinoCidade}-treinamento-bateria-365`) || "evento") + "-" + randomUUID().replace(/-/g, "").slice(0, 6)
     const [ev] = await db
       .insert(events)
-      .values({ distributorId: reservada.distributorId, titulo: "Treinamento Bateria 365", dataISO: reservada.dataInicioISO, cidade: reservada.destinoCidade, slug: eventoSlug })
+      .values({ distributorId, titulo: "Treinamento Bateria 365", dataISO: reservada.dataInicioISO, cidade: reservada.destinoCidade, slug: eventoSlug })
       .returning({ id: events.id })
     eventoId = ev.id
   } catch {
-    try {
-      await db
-        .update(proposals)
-        .set({ status: "enviada", aceitaEm: null, updatedAt: vistoEm })
-        .where(and(eq(proposals.id, p.id), eq(proposals.status, "aceita"), isNull(proposals.eventId)))
-    } catch {}
+    await desfazerReserva()
     return { error: "Não foi possível concluir o aceite — tente de novo." }
   }
   for (let tentativa = 0; tentativa < 2; tentativa++) {
     try {
-      await db.update(proposals).set({ eventId: eventoId }).where(eq(proposals.id, p.id))
+      await db.update(proposals).set({ eventId: eventoId, distributorId }).where(eq(proposals.id, p.id))
       break
     } catch {}
   }
@@ -96,5 +120,20 @@ export async function aceitarProposta(slug: string, visto: string): Promise<{ er
   revalidatePath(caminho(slug))
   revalidatePath("/parceiro365/admin/propostas")
   revalidatePath("/parceiro365/eventos")
+  revalidatePath("/parceiro365/admin")
   return {}
+}
+
+// Conta de distribuidor para o e-mail da unidade: reaproveita a existente (o admin pode
+// ter cadastrado nesse meio-tempo) ou cria uma, como no cadastro do Super Admin.
+async function contaDoDistribuidor(d: { distribuidorNome: string; distribuidorCidade: string; distribuidorEmail: string }): Promise<string | null> {
+  const email = d.distribuidorEmail.trim().toLowerCase()
+  if (!email || !d.distribuidorNome) return null
+  const senha = gerarSenha()
+  await db
+    .insert(users)
+    .values({ nome: d.distribuidorNome, email, cidade: d.distribuidorCidade, passwordHash: await bcrypt.hash(senha, 10), senhaPlain: senha, role: "distribuidor" })
+    .onConflictDoNothing({ target: users.email })
+  const [u] = await db.select({ id: users.id, role: users.role }).from(users).where(eq(users.email, email))
+  return u?.role === "distribuidor" ? u.id : null
 }
