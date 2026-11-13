@@ -1,6 +1,16 @@
 /* eslint-disable @next/next/no-img-element */
 import type React from "react"
 
+// Área da assinatura com altura fixa e imagem presa à base: a linha amarela
+// logo abaixo fica na mesma altura nos dois blocos, seja qual for o tamanho
+// da imagem (a que for mais alta transborda para cima).
+const SIG_AREA: React.CSSProperties = {
+  height: "5cqw",
+  display: "flex",
+  alignItems: "flex-end",
+  justifyContent: "center",
+}
+
 // Template do Certificado (porte de Certificado.dc.html). Usa container-queries
 // (unidades cqw) para escalar com a largura — funciona na prévia e na impressão.
 export function Certificate({
@@ -74,13 +84,17 @@ export function Certificate({
         <div style={{ position: "absolute", left: "6.9cqw", top: "35cqw", width: "72cqw", fontSize: "2.04cqw", lineHeight: 1.5, color: "#545454" }}>{corpoTexto}</div>
         <div style={{ position: "absolute", left: "6.9cqw", top: "45.4cqw", fontSize: "2.04cqw", lineHeight: 1.4, color: "#545454", whiteSpace: "nowrap" }}>{cidadeData}</div>
         <div style={{ position: "absolute", left: "6.83cqw", top: "50.5cqw", width: "26.2cqw", textAlign: "center" }}>
-          <img src="/parceiro365/sig-rafael.png" alt="" style={{ height: "8cqw", width: "auto", maxWidth: "95%", display: "inline-block", marginBottom: "-3cqw" }} />
+          <div style={SIG_AREA}>
+            <img src="/parceiro365/sig-rafael.png" alt="" style={{ height: "8cqw", width: "auto", maxWidth: "95%", display: "block", marginBottom: "-3cqw" }} />
+          </div>
           <div style={{ height: "0.24cqw", background: "#f9b801", width: "100%" }} />
           <div style={{ fontSize: "1.5cqw", fontWeight: 700, color: "#21325a", marginTop: "1cqw" }}>Rafael André</div>
           <div style={{ fontSize: "1.02cqw", letterSpacing: "0.16em", color: "#21325a", marginTop: "0.4cqw" }}>INSTRUTOR</div>
         </div>
         <div style={{ position: "absolute", left: "36.5cqw", top: "50.5cqw", width: "26.2cqw", textAlign: "center" }}>
-          <img src="/parceiro365/sig-davi.png" alt="" style={{ height: "5cqw", width: "auto", maxWidth: "95%", display: "inline-block", marginBottom: "-1cqw" }} />
+          <div style={SIG_AREA}>
+            <img src="/parceiro365/sig-davi.png" alt="" style={{ height: "5cqw", width: "auto", maxWidth: "95%", display: "block", marginBottom: "-1cqw" }} />
+          </div>
           <div style={{ height: "0.24cqw", background: "#f9b801", width: "100%" }} />
           <div style={{ fontSize: "1.5cqw", fontWeight: 700, color: "#21325a", marginTop: "1cqw" }}>Davi Barbosa</div>
           <div style={{ fontSize: "1.02cqw", letterSpacing: "0.16em", color: "#21325a", marginTop: "0.4cqw" }}>INSTRUTOR</div>
