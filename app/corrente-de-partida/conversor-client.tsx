@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useId, useState, type KeyboardEvent } from "react"
 import Image from "next/image"
 import { AlertTriangle, CheckCircle2, MapPin, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -41,11 +41,34 @@ const ESTILO_NIVEL: Record<Nivel, { caixa: string; titulo: string; Icone: typeof
 const CARD = "rounded-2xl border border-[#e3e8f0] bg-white p-4 shadow-[0_10px_30px_-18px_rgba(16,33,60,.45)] sm:p-5"
 const ROTULO = "text-[12.5px] font-bold text-[#41506a]"
 
+// Alvo de toque de 44 px (uso no celular do balcão) e foco visível para quem navega pelo teclado.
+const FOCO = "outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+
 const chip = (on: boolean) =>
-  `h-8 rounded-full px-3.5 text-[13px] font-bold transition-colors ${on ? "bg-primary text-white" : "border border-[#d9e0ea] bg-white text-[#41506a] hover:bg-[#f1f4f9]"}`
+  `h-11 rounded-full px-4 text-[13.5px] font-bold transition-colors ${FOCO} ${on ? "bg-primary text-white" : "border border-[#d9e0ea] bg-white text-[#41506a] hover:bg-[#f1f4f9]"}`
+
+const SETAS: Record<string, (i: number, total: number) => number> = {
+  ArrowRight: (i) => i + 1,
+  ArrowDown: (i) => i + 1,
+  ArrowLeft: (i) => i - 1,
+  ArrowUp: (i) => i - 1,
+  Home: () => 0,
+  End: (_, total) => total - 1,
+}
+
+// Setas, Home e End trocam a opção escolhida e levam o foco junto, como nos grupos de rádio e abas nativos.
+function navegarComSetas<T extends string>(e: KeyboardEvent, ids: T[], atual: T, prefixo: string, escolher: (id: T) => void) {
+  const mover = SETAS[e.key]
+  if (!mover) return
+  e.preventDefault()
+  const proximo = ids[(mover(ids.indexOf(atual), ids.length) + ids.length) % ids.length]
+  escolher(proximo)
+  document.getElementById(`${prefixo}-${proximo}`)?.focus()
+}
 
 export function ConversorClient({ uf }: { uf: string }) {
   const [aba, setAba] = useState<Aba>("converter")
+  const base = useId()
 
   return (
     <main className="min-h-screen bg-[#eef2f8] px-4 py-6 font-sans text-[#16202f] sm:py-12">
@@ -56,15 +79,23 @@ export function ConversorClient({ uf }: { uf: string }) {
           <p className="mt-1 text-[14px] text-[#5a6579]">Converta entre normas e confira se a bateria serve.</p>
         </header>
 
-        <div role="tablist" aria-label="Ferramenta" className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-[#e4eaf3] p-1">
+        <div
+          role="tablist"
+          aria-label="Ferramenta"
+          onKeyDown={(e) => navegarComSetas(e, ABAS.map((a) => a.id), aba, `${base}-aba`, setAba)}
+          className="mb-3 grid grid-cols-2 gap-1 rounded-xl bg-[#e4eaf3] p-1"
+        >
           {ABAS.map((a) => (
             <button
               key={a.id}
+              id={`${base}-aba-${a.id}`}
               type="button"
               role="tab"
               aria-selected={aba === a.id}
+              aria-controls={`${base}-painel-${a.id}`}
+              tabIndex={aba === a.id ? 0 : -1}
               onClick={() => setAba(a.id)}
-              className={`h-9 rounded-lg text-[14px] font-bold transition-colors ${aba === a.id ? "bg-white text-primary shadow-sm" : "text-[#5a6579]"}`}
+              className={`h-11 rounded-lg text-[14px] font-bold transition-colors ${FOCO} ${aba === a.id ? "bg-white text-primary shadow-sm" : "text-[#5a6579]"}`}
             >
               {a.nome}
             </button>
@@ -72,10 +103,10 @@ export function ConversorClient({ uf }: { uf: string }) {
         </div>
 
         {/* As duas abas ficam montadas para não perder o que foi digitado ao trocar. */}
-        <div hidden={aba !== "converter"}>
+        <div role="tabpanel" id={`${base}-painel-converter`} aria-labelledby={`${base}-aba-converter`} hidden={aba !== "converter"}>
           <Converter />
         </div>
-        <div hidden={aba !== "comparar"}>
+        <div role="tabpanel" id={`${base}-painel-comparar`} aria-labelledby={`${base}-aba-comparar`} hidden={aba !== "comparar"}>
           <Comparar uf={uf} />
         </div>
 
@@ -154,25 +185,9 @@ function Comparar({ uf }: { uf: string }) {
       </section>
 
       <section className={`mt-3 space-y-3.5 ${CARD}`}>
+        <GrupoOpcoes rotulo="Tipo de veículo" opcoes={VEICULOS} valor={veiculo} onChange={setVeiculo} />
         <div className="space-y-1.5">
-          <Label className={ROTULO}>Tipo de veículo</Label>
-          <div role="radiogroup" aria-label="Tipo de veículo" className="flex flex-wrap gap-1.5">
-            {VEICULOS.map((o) => (
-              <button key={o.id} type="button" role="radio" aria-checked={o.id === veiculo} onClick={() => setVeiculo(o.id)} className={chip(o.id === veiculo)}>
-                {o.nome}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <Label className={ROTULO}>Clima onde o carro roda</Label>
-          <div role="radiogroup" aria-label="Clima" className="flex flex-wrap gap-1.5">
-            {CLIMAS.map((o) => (
-              <button key={o.id} type="button" role="radio" aria-checked={o.id === clima} onClick={() => setClima(o.id)} className={chip(o.id === clima)}>
-                {o.nome}
-              </button>
-            ))}
-          </div>
+          <GrupoOpcoes rotulo="Clima onde o carro roda" opcoes={CLIMAS} valor={clima} onChange={setClima} />
           <p className="flex items-center gap-1 text-[11.5px] leading-snug text-[#7b8597]">
             <MapPin className="h-3 w-3 shrink-0" /> Você está em {uf}: sugerimos {climaDaUf === "frio" ? "Sul / serra (frio)." : "clima quente. Troque se o carro roda em serra."}
           </p>
@@ -185,6 +200,50 @@ function Comparar({ uf }: { uf: string }) {
         <p className="mt-3 rounded-xl bg-[#e4eaf3] px-4 py-3 text-center text-[12.5px] text-[#41506a]">Preencha as duas baterias para ver o parecer.</p>
       )}
     </>
+  )
+}
+
+// Grupo de botões que funciona como rádio: só a opção marcada entra no Tab; as setas trocam a escolha.
+// contexto: id de um título que diferencia grupos com o mesmo rótulo (ex.: "Norma da etiqueta" da original e da candidata).
+function GrupoOpcoes<T extends string>({
+  rotulo,
+  contexto,
+  opcoes,
+  valor,
+  onChange,
+}: {
+  rotulo: string
+  contexto?: string
+  opcoes: { id: T; nome: string }[]
+  valor: T
+  onChange: (id: T) => void
+}) {
+  const base = useId()
+  return (
+    <div className="space-y-1.5">
+      <span id={`${base}-rotulo`} className={`block ${ROTULO}`}>{rotulo}</span>
+      <div
+        role="radiogroup"
+        aria-labelledby={contexto ? `${contexto} ${base}-rotulo` : `${base}-rotulo`}
+        onKeyDown={(e) => navegarComSetas(e, opcoes.map((o) => o.id), valor, base, onChange)}
+        className="flex flex-wrap gap-2"
+      >
+        {opcoes.map((o) => (
+          <button
+            key={o.id}
+            id={`${base}-${o.id}`}
+            type="button"
+            role="radio"
+            aria-checked={o.id === valor}
+            tabIndex={o.id === valor ? 0 : -1}
+            onClick={() => onChange(o.id)}
+            className={chip(o.id === valor)}
+          >
+            {o.nome}
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -215,17 +274,16 @@ function CampoBateria({ id, titulo, bateria, onChange }: { id: string; titulo?: 
 
   return (
     <div className="space-y-3.5">
-      {titulo && <h2 className="text-[15px] font-extrabold">{titulo}</h2>}
+      {titulo && <h2 id={`${id}-titulo`} className="text-[15px] font-extrabold">{titulo}</h2>}
 
       <div className="space-y-1.5">
-        <Label className={ROTULO}>Norma da etiqueta</Label>
-        <div role="radiogroup" aria-label={titulo ? `Norma: ${titulo}` : "Norma da etiqueta"} className="flex flex-wrap gap-1.5">
-          {NORMAS.map((n) => (
-            <button key={n.id} type="button" role="radio" aria-checked={n.id === bateria.norma} onClick={() => trocarNorma(n.id)} className={chip(n.id === bateria.norma)}>
-              {n.sigla}
-            </button>
-          ))}
-        </div>
+        <GrupoOpcoes
+          rotulo="Norma da etiqueta"
+          contexto={titulo ? `${id}-titulo` : undefined}
+          opcoes={NORMAS.map((n) => ({ id: n.id, nome: n.sigla }))}
+          valor={bateria.norma}
+          onChange={trocarNorma}
+        />
         {normaAtual.nota && <p className="text-[11.5px] leading-snug text-[#7b8597]">{normaAtual.nota}</p>}
       </div>
 
