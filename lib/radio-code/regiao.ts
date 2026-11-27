@@ -5,7 +5,7 @@ import UFS from "./ufs-brasil.json"
 // IMPORTANTE: só para código de servidor (rotas e server components).
 
 // Estados que já receberam o Bateria 365. Para liberar um estado novo, é só incluir a sigla aqui.
-export const ESTADOS_LIBERADOS = ["RS", "SC", "PR", "SP", "MG", "MS", "GO", "TO", "AM", "AL", "PB", "MA"]
+export const ESTADOS_LIBERADOS = ["RS", "SC", "PR", "SP", "MG", "MS", "GO", "TO", "AM", "AL", "PB", "MA", "RJ"]
 
 export const REGIAO_COOKIE = "codigo_radio_regiao"
 // Vale 24h; depois disso a localização é pedida de novo.
